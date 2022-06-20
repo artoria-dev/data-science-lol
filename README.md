@@ -1,4 +1,3 @@
-(This project is still WIP)
 (This README is still WIP)
 
 3 a.m. productions presents:
@@ -631,13 +630,83 @@ Cs'ing is not the only source of gold income, but it obviously takes a great par
 
 ## Feature Engineering
 
-tbd
+This chapter covers the creation of variables which are most likely going to have an impact of the probability of winning.
+This also is where I divide my testing and training data from my whole data set.
+
+I will start off with separating my testing and training data:
+
+    import pandas as pd
+
+    df = pd.read_feather('data-final/data.feather')
+
+    df_train = df.sample(frac=0.85, random_state=0)  # len 59745
+    df_test = df.drop(df_train.index)  # len 10543
+
+Now my training data consist of 85 % of the whole data set while the testing data takes the left over 15 %.
+
+Next I will add variables to simplify my model for later learning purposes:
+
+| **Variable**                    | **Calculation**                                                     |
+|---------------------------------|---------------------------------------------------------------------|
+| blueTeamWardRetentionRatio      | (blueTeamWardsPlaced - redTeamWardsDestroyed) / blueTeanWardsPlaced |
+| blueTeamNetKills                | blueTeamKills - redTeamKills                                        |
+| blueTeamJungleMinionsKilledDiff | blueTeamTotalJungleMinionsKilled - redTeamTotalJungleMinionsKilled  |
+| blueTeamMinionsKilledDiff       | blueTeamTotalMinionsKilled - redTeamTotalMinionsKilled              |
+| blueTeamAvgLevelDiff            | blueTeamAvgLevel - redTeamAvgLevel                                  |
+| blueTeamCsPerMinuteDiff         | blueTeamCsPerMinute - redTeamCsPerMinute                            |
+| blueTeamGoldPerMinuteDiff       | blueTeamGoldPerMinute - redTeamGoldPerMinute                        |
+
+Note that I only need these variables for one team (in this case blue team), since red team wins if blue team does not.
+
+I can add these variables simply by doing:
+
+    df_train['blueTeamWardRetentionRatio'] = (df_train.blueTeamWardsPlaced - df_train.redTeamWardsDestroyed)/df_train.blueTeamWardsPlaced
+    df_train['blueTeamNetKills'] = (df_train.blueTeamKills - df_train.redTeamKills)
+    df_train['blueTeamJungleMinionsKilledDiff'] = (df_train.blueTeamTotalJungleMonsterKilled - df_train.redTeamTotalJungleMonsterKilled)
+    df_train['blueTeamMinionsKilledDiff'] = (df_train.blueTeamTotalMinionsKilled - df_train.redTeamTotalMinionsKilled)
+    df_train['blueTeamAvgLevelDiff'] = (df_train.blueTeamAvgLevel - df_train.redTeamAvgLevel)
+    df_train['blueTeamCsPerMinuteDiff'] = (df_train.blueTeamCsPerMinute - df_train.redTeamCsPerMinute)
+    df_train['blueTeamGoldPerMinuteDiff'] = (df_train.blueTeamGoldPerMinute - df_train.redTeamGoldPerMinute)
+
+By checking the training dataframe's head:
+
+    print(df_train.head())
+
+I get in return:
+
+           blueTeamWin  ...  blueTeamGoldPerMinuteDiff
+    16538            1  ...                        616
+    47472            1  ...                        144
+    27040            0  ...                       -349
+    36878            1  ...                        441
+    860              1  ...                         75
 
 ***
 
 ## Dealing With Multicollinearity
 
-tbd
+Multicollinearity describes the issue with multiple variables correlating when predicting the same outcome.
+
+Say the blue team got first blood, have lots of early-game-champions in their team, decent player and an understanding of extending the advantage they acquired.
+Now surely the blue team will have more options to actively control the game. That results in blue team having more gold and experience.
+If the blue team now wins the game, it's not easy to say which factors (for example gold or experience) had more impact to that.
+
+    Sidenote:
+    A match can be classified in three stages: early-, mid- or late-game.
+    An 'early-game-champion' performs well in the earlier stage of the game,
+    while a late-game-champion often suffers early on against early-game-champions.
+
+A simple example (with barely any matches to be able to visualise the problem):
+
+![multicollinearity](readme-files/multicollinearity.png)
+
+(Note, the values are unified for appearance reasons)
+
+As seen in the plot, the two values do correlate quiet often.
+Now I cannot tell which value induces the other as both seem to be valuable yet similar.
+
+I will deal with it for now.
+If I am not happy with the result of the model I might tweak the values later.
 
 ***
 
