@@ -18,9 +18,9 @@
 - [Exploratory Data Analysis](#exploratory-data-analysis)
 - [Feature Engineering](#feature-engineering)
 - [Dealing With Multicollinearity](#dealing-with-multicollinearity)
-- [Building Classifier Models](#building-classifier-models)
+- [Building The Model](#building-the-model)
 - [Evaluation](#evaluation)
-- [Testing](#testing)
+- [Review](#review)
 
 ***
 
@@ -41,7 +41,6 @@ In case you wish to contact me for whatever reason, please use discord and find 
 ## Project Object
 
 Main target for this project will be able to predict the outcome of a game based on in-game values at the 15-minute mark.
-As bonus, I will try to determine the most influential factors in League of Legends in order to win a game.
 
 ## Acquiring Data
 
@@ -779,28 +778,271 @@ If I am not happy with the result of the model I might tweak the values later.
 
 ***
 
-## Building Classifier Models
+## Building The Model
 
-tbd
+Upcoming will be some theoretical concept of machine learning and neural networks.
+
+Now given is a graph, with certain values:
+
+![sample-linear-relationship](readme-files/sample-linear-relationship.png)
+
+In blue is the data given. My model in orange tries to be as close to the data as possible.
+In this case I just chose the mean of the data for demonstration purposes.
+Now If I want to test my model and ask it what my mark will be if I study for 6 hours, it will predict my mark being 45 % (in green).
+
+This is what is called a linear relationship. What if one has more input variables than just the amount of hours studied, like I do in my data?
+That is where neural networks come into place. Here is a quick illustration:
+
+![sample-neural-network](readme-files/sample-neural-network.png)
+
+(Please excuse my poor drawing skills)
+
+The input variables are in blue to the left. In this example there are three input variables but than scale infinitely.
+The orange dots represent nodes (which can also scale infinitely). All nodes within one column are counted as a 'hidden layer'.
+There can be as many hidden layer as one wishes. The more there are, the more confident will the model be.
+
+Am input can *walk* their way via the nodes (left to right) until it hits the output. The ways are in purple.
+Each way an input can go, receives a certain unique 'weight' (usually between 0 and 1).
+Inside a node the arriving data (coming from the input or other nodes) will be multiplied with their weights and summed up with the other input data.
+
+Depending on that, a certain 'activation'-function triggers inside a node (or neuron) as if the neuron actually fires up.
+For example, if a returning value from a node returns a certain value greater than 3 the activation function returns 1 (only sample values).
+Now, usually you would rather tend to use a [sigmoid activation function](https://towardsdatascience.com/activation-functions-neural-networks-1cbd9f8d91d6), which would the activation function return a value between 0 and 1, and not 0 or 1.
+
+Let's say the sigmoid activation function returns a 0.89 for a win, then the model is 89 % confident the input variables result in a win.
+It will also be 11 % confident that the input variables lead to a loss. Of course, I use the greater value.
+
+Now for the practical part.
+
+First I split my data into categorical and continuous variables. Categorical values can only be one of two states, such as a booleans.
+These can be true/false or 1/0. You get the point.
+Continuous variables have a value between a set minimum and a set maximum. For example 0.54 with a minimum of 0 and a maximum of 1.
+
+    continuousVars = ['blueTeamNetKills', 'blueTeamAssists', 'blueTeamAvgLevelDiff', 'blueTeamGoldPerMinuteDiff',
+                   'blueTeamCsPerMinuteDiff', 'blueTeamJungleMinionsKilledDiff', 'blueTeamMinionsKilledDiff',
+                   'blueTeamWardRetentionRatio']
+    categoricalVars = ['blueTeamFirstBlood', 'blueTeamDragonsKilled', 'blueTeamHeraldsKilled', 'blueTeamTowerDestroyed']
+
+And I can sort my training dataframe:
+
+    df_train = df_train[['blueTeamWin'] + continuousVars + categoricalVars]
+
+Next I will change the values of the categorical variables for the model to be able to capture negative relations:
+
+    df_train.loc[df_train.blueTeamFirstBlood == 0, 'blueTeamFirstBlood'] = -1
+    df_train.loc[df_train.blueTeamDragonsKilled == 0, 'blueTeamDragonsKilled'] = -1
+    df_train.loc[df_train.blueTeamHeraldsKilled == 0, 'blueTeamHeraldsKilled'] = -1
+    df_train.loc[df_train.blueTeamTowerDestroyed == 0, 'blueTeamTowerDestroyed'] = -1
+
+The range of the variables in my data varies a lot. 
+For example blueTeamTotalGold (13808 - 41110) and blueTeamAvgLevel (5 - 11).
+I could use these values as they are but a neural network prefers values between 0 and 1, which is why I have to normalise my continuous variables:
+
+    minVec = df_train[continuousVars].min().copy()
+    maxVec = df_train[continuousVars].max().copy()
+    df_train[continuousVars] = (df_train[continuousVars] - minVec) / (maxVec - minVec)
+
+That results my data to be scaled down to a value between 0 and 1 depending on all the other values:
+
+    blueTeamWin  blueTeamNetKills  blueTeamAssists  blueTeamAvgLevelDiff
+              1          0.535211         0.127660                 0.500
+
+(This does not include all the variables in my dataset.)
+
+I can use a for loop to ensure all the categorical variables appear in the subsequent data aswell.
+
+    lst = list(set(df_train_Cols) - set(df_predict.columns))
+        for item in lst:
+            df_predict[str(item)] = -1
+
+Here I scale the continuous variables based on min and max from the train data.
+
+    df_predict[continuousVars] = (df_predict[continuousVars] - minVec) / (maxVec - minVec)
+
+The last thing to do will be to ensure the variables are ordered the way I stored them.
+
+    df_predict = df_predict[df_train_Cols]
+        return df_predict
+
+Oh, did I mention all the code snippets are inside a methode? Hah, Gotcha!  
+.. The whole code can be found in the GitHub.
+
+Okay, for the actual model I am using the library '[scikit-learn](https://scikit-learn.org/stable/)'.
+I got my data set up and ready to be classified in a model. I will use different kind of classifier and compare them.
+
+First off, the 'Logistic Regression', or 'Linear Regression'.
+I showed this type or regression before (the plot with the students and their marks).
+
+    logReg = LogisticRegression(solver='lbfgs', max_iter=100000)
+    logReg.fit(df_train.loc[:, df_train.columns != 'blueTeamWin'], df_train.blueTeamWin)
+
+The 'LogisticRegression'-class takes a 'solver' as argument. Here is a list of supported solver:
+
+- newton-cg - [‘l2’, ‘none’]
+- lbfgs - [‘l2’, ‘none’]
+- liblinear - [‘l1’, ‘l2’]
+- sag - [‘l2’, ‘none’]
+- saga - [‘elasticnet’, ‘l1’, ‘l2’, ‘none’]
+
+They differ in the penalties applied which prevents overfitting.
+
+    Sidenote:
+    Overfitting means the model is fitted too much to the data given.
+    If the data does not contain every data in world, the model will return bad values.
+
+Next up the 'Random Forest Classifier'. A construct out of 'Decision Tree Classifiers' (that's why it's called forest classifier) which deals with regressions tasks by using a tree's mean.
+I can implement this by:
+
+    forestReg = RandomForestClassifier(max_depth=9, max_features=9, max_leaf_nodes=None)
+    forestReg.fit(df_train.loc[:, df_train.columns != 'blueTeamWin'], df_train.blueTeamWin)
+
+Note that the RandomForestClassifier-class takes parameters to determine the size of the neural network.
+
+Lastly I use XGBoost's framework, which works nicely with scikit. [Here](https://xgboost.readthedocs.io/en/stable/index.html) is a link to their documentation.
+I implemented this by calling the respective class:
+
+    XGB = XGBClassifier()
+    XGB.fit(df_train.loc[:, df_train.columns != 'blueTeamWin'], df_train.blueTeamWin)
+
+Just like I was able to adjust the nodes in the prior examples when calling the class, I could dothis here aswell, but I will stay with the default for now (Seriously, check their documentation. The list of arguments is tremendous).
+
+Now I can print each of the classifier's report:
+
+    print(classification_report(df_train.blueTeamWin, logReg.predict(df_train.loc[:, df_train.columns != 'blueTeamWin'])))
+    print(classification_report(df_train.blueTeamWin, forestReg.predict(df_train.loc[:, df_train.columns != 'blueTeamWin'])))
+    print(classification_report(df_train.blueTeamWin, XGB.predict(df_train.loc[:, df_train.columns != 'blueTeamWin'])))
+
+The output for each of the classifies is listed below (in nice tables, just for you..).
+
+Primal Logistic Regression:
+
+|              | **Precision** | **Recall** | **F1-Score** | **Support** |
+|--------------|---------------|------------|--------------|-------------|
+| 0            | 0.76          | 0.75       | 0.76         | 29402       |
+| 1            | 0.76          | 0.77       | 0.77         | 30343       |
+| Accuracy     |               |            | 0.76         | 59745       |
+| Macro Avg    | 0.76          | 0.76       | 0.76         | 59745       |
+| Weighted Avg | 0.76          | 0.76       | **0.76**     | 59745       |
+
+Random Forest Classifier:
+
+|              | **Precision** | **Recall** | **F1-Score** | **Support** |
+|--------------|---------------|------------|--------------|-------------|
+| 0            | 0.78          | 0.78       | 0.78         | 29402       |
+| 1            | 0.78          | 0.78       | 0.78         | 30343       |
+| Accuracy     |               |            | 0.78         | 59745       |
+| Macro Avg    | 0.78          | 0.78       | 0.78         | 59745       |
+| Weighted Avg | 0.78          | 0.78       | **0.78**     | 59745       |
+
+XGBoost Classifier:
+
+|              | **Precision** | **Recall** | **F1-Score** | **Support** |
+|--------------|---------------|------------|--------------|-------------|
+| 0            | 0.78          | 0.79       | 0.79         | 29402       |
+| 1            | 0.79          | 0.79       | 0.79         | 30343       |
+| Accuracy     |               |            | 0.79         | 59745       |
+| Macro Avg    | 0.79          | 0.79       | 0.79         | 59745       |
+| Weighted Avg | 0.79          | 0.79       | **0.79**     | 59745       |
+
+Here is an explanation for the table's column names (Yes they are copied from [here](https://www.scikit-yb.org/en/latest/api/classifier/classification_report.html). I am too lazy to paraphrase):
+
+*precision:*  
+Precision can be seen as a measure of a classifier’s exactness.
+For each class, it is defined as the ratio of true positives to the sum of true and false positives.
+Said another way, 'for all instances classified positive, what percent was correct?'
+
+*recall:*  
+Recall is a measure of the classifier's completeness; the ability of a classifier to correctly find all positive instances.
+For each class, it is defined as the ratio of true positives to the sum of true positives and false negatives.
+Said another way, 'for all instances that were actually positive, what percent was classified correctly?'
+
+*f1 score:*  
+The F1 score is a weighted harmonic mean of precision and recall such that the best score is 1.0 and the worst is 0.0.
+Generally speaking, F1 scores are lower than accuracy measures as they embed precision and recall into their computation.
+As a rule of thumb, the weighted average of F1 should be used to compare classifier models, not global accuracy
+
+*support:*  
+Support is the number of actual occurrences of the class in the specified dataset.
+Imbalanced support in the training data may indicate structural weaknesses in the reported scores of the classifier and could indicate the need for stratified sampling or rebalancing.
+Support doesn't change between models but instead diagnoses the evaluation process.
+
+Okay, so if I compare each weighted average score, the XGBoost Classifier wins with 0.79 (0.01 over the Random Forest Classifier).
+I might get different results if I tweak the input parameters for each classifier, but I am happy the way it is now.
 
 ***
 
 ## Evaluation
 
+Here we are. After nearly 7.000 (seven-thousand) words and 45.000 (forty-five thousand) digits later I have finally reached the point of truth: How precise is my model?
+
+If you remember, I split my data into training and testing data.
+I will now use my testing data on the model I trained with the training data.
+
+    df_test = Pipe(df_test, df_train.columns, minVec, maxVec)
+    df_test = df_test.mask(np.isinf(df_test))
+    df_test = df_test.dropna()
+    print(classification_report(df_test.blueTeamWin, XGB.predict(df_test.loc[:, df_test.columns != 'blueTeamWin'])))
+
+Please note, 'Pipe()' is the methode I mentioned before.
+With 'pandas.DataFrame.mask(numpy.isinf()) I can map and exchange all values in my dataframe to a boolean expression in case there are somewhat close to infinity (weird way to express that).
+With 'pandas.DataFrame.dropna()' I remove all the missing values, in case there are some.
+
+Here is the final table of the classification report using my testing data on the trained model:
+
+|              | **Precision** | **Recall** | **F1-Score** | **Support** |
+|--------------|---------------|------------|--------------|-------------|
+| 0            | 0.69          | 0.66       | 0.68         | 5265        |
+| 1            | 0.68          | 0.71       | 0.69         | 5278        |
+| Accuracy     |               |            | 0.79         | 10543       |
+| Macro Avg    | 0.68          | 0.68       | 0.68         | 10543       |
+| Weighted Avg | 0.68          | 0.68       | 0.68         | 10543       |
+
+That results in my model being able to predict more than two-thirds of all the games.
+
+Not bad.
+
 ***
+
+*The crowd: Can't we have another plot, please?*  
+Sure!
+
+***ROC Curve and AUC***
+
+A ROC curve (receiver operating characteristic curve) is a graph showing the performance of a classification model at all classification thresholds. This curve plots two parameters:
+
+- True Positive Rate (TPR)
+- False Positive Rate (FPR)
+
+An ROC curve plots TPR vs. FPR at different classification thresholds.
+Lowering the classification threshold classifies more items as positive, thus increasing both False Positives and True Positives.
+
+AUC stands for 'Area under the ROC Curve'.
+That is, AUC measures the entire two-dimensional area underneath the entire ROC curve (think integral calculus) from (0,0) to (1,1).
+The higher the AUC, the better the predictions.
+
+(Copy / paste source [here](https://developers.google.com/machine-learning/crash-course/classification/roc-and-auc))
+
+I can get the required values for my ROC-curve by doing:
+
+    auc_XGB_test, fpr_XGB_test, tpr_XGB_test = get_auc_scores(df_test.blueTeamWin, XGB.predict(df_test.loc[:, df_test.columns != 'blueTeamWin']), XGB.predict_proba(df_test.loc[:, df_test.columns != 'blueTeamWin'])[:, 1])
+
+And plot it:
+
+    plt.figure(figsize=(12, 6), linewidth=1)
+    plt.plot(fpr_XGB_test, tpr_XGB_test, label='XGB score: ' + str(round(auc_XGB_test, 5)))
+    plt.plot([0, 1], [0, 1], 'k--', label='Random: 0.5')
+    plt.xlabel('False positive rate')
+    plt.ylabel('True positive rate')
+    plt.title('ROC Curve')
+    plt.legend(loc='best')
+    plt.show()
+
+To get the ROC-curve:
+
+![roc-curve](readme-files/roc-curve.png)
+
+***
+
+## Review
 
 tbd
-
-***
-
-## Testing
-
-WIP
-
-10 oder 20% von den matches kommen nicht ins model und werden zum testen verwendet
-
-unterscheidung zwischen unbiased und biased data:
-- unbiased mit den 10 oder 20% der games (elo unbekannt, weil matches sortiert werden)
-- biased mit neuen games, bei denen ich die elo weiß
-
-(ROC-Curve !)
