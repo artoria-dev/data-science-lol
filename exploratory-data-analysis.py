@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 
 
 def winRate():
@@ -47,8 +48,18 @@ def avgLevelByCs():
     plt.show()
 
 
+def heatmap():
+    df.drop(df.iloc[:, 16:33], axis=1, inplace=True)
+    fig = plt.figure(figsize=(15, 30))
+    heatMap = sns.heatmap(df.loc[:].corr(), annot=True, cmap='jet')
+    heatMap.set_yticklabels(heatMap.get_yticklabels(), rotation=0)
+    heatMap.set_xticklabels(heatMap.get_xticklabels(), rotation=35)
+    plt.show()
+
+
 if __name__ == '__main__':
     df = pd.read_feather('data-final/data.feather')
     # winRate()
     # winRatePerFirstBlood()
     # avgLevelByCs()
+    # heatmap()
