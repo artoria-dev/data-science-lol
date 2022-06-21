@@ -615,7 +615,7 @@ The red team seems to better at winning games when playing from behind while the
     When a champion or a team has less gold, experience or stats than the opponent,
     they are playing from 'behind'.
 
-Last thing I want to show is the correlation between the gold and cs per minute:
+Another thing I want to show is the correlation between the gold and cs per minute:
 
 ![cspm-gpm-correlation](readme-files/cspmgpmcorrelation.png)
 
@@ -625,6 +625,75 @@ Cs'ing is not the only source of gold income, but it obviously takes a great par
 
     Sidenote:
     'Cs-ing' describes the procedure of farming minions.
+
+But I am sure the most interesting view is a heatmap:
+
+![heatmap](readme-files/heatmap.png)
+
+(I hope you can even recognise something on that picture..)  
+The labels on the x-axis are a bit off, I couldn't find a way to fix this.
+Please orientate on the y-axis.
+Also, these are the values from the blue team, excluding the game duration.
+
+This view is the best to show correlations for variables (I will cover that in a later topic).
+I can for example see that the assists and kills are strongly positively correlated, obviously.
+So is the amount of total minions killed and the cs per minute.
+
+For me, the most confusing discovery is the correlation between the kills and the gold income.
+I haven't heard a single skilled player saying killing enemy champions is more important than killing enemy minions (including me. Yes, I consider myself as a decent player).
+Now that could be due to the fact my data mostly consists of lower elo games (gold tier and below) whereas killing champions has a higher priority than killing minions.
+I tried to find a different source to proof this but couldn't find a decent one (sorry!).  
+In the sake of science, I still try to proof this by showing a table of the total gold which can be acquired of one wave per game time (as of [League of Legends Wiki](https://leagueoflegends.fandom.com/wiki/Minion_(League_of_Legends)), June 2022):
+
+| **Game Time** | **Average Gold Per Wave** | **Calculations**               | **Average Gold Per CS** |
+|---------------|---------------------------|--------------------------------|-------------------------|
+| 0:00          | 125                       | (3 * 21) + (3 * 14) + (60 / 3) | 19.8                    |
+| 15:00         | 147                       | (3 * 21) + (3 * 14) + (84 / 2) | 22.6                    |
+| 17:15         | 150                       | (3 * 21) + (3 * 14) + (90 / 2) | 23                      |
+| 25:00         | 195                       | (3 * 21) + (3 * 14) + (90)     | 27.6                    |
+
+    Sidenote:
+    Minions spawn in 'waves' every 30 seconds. It consists of 3 melee and 3 caster minions.
+    Every third wave, there is also a cannon minion which has way better stats than the other minion types.
+    In later stages of the game, the cannon spawns more often.
+    A melee minions is worth 21 gold, a caster 14 and a cannon 60 to 90 depending on game time.
+
+A kill is worth 400 gold. To compensate the gold acquired by killing minions, one would have to kill a champion every ~1.5 minutes (calculated with values at 15 minute mark).
+Now, as a prerequisite for the next part, the average level at the 15-minute mark is 9.1240395 (taken from my data).
+Next up, I calculate the total death time of a champion with this level (death time increases over time):
+
+    Formulas:
+    BRW = Level × 2.5 + 7.5
+    Total respawn time = BRW + ( (BRW / 100) × (current minutes - 15) × 2 × 0.425)
+    
+    Calculations:
+    BRW = 9 × 2.5 + 7.5 = 30
+    Total respawn time = 30 + ( (30 / 100) × (15 - 15) × 2 × 0.425) = 30
+
+    Sidenote:
+    'BRW' stands for 'Base Respawn Time'
+
+Okay, so a champion needs 30 seconds to respawn.
+Now I will have to guess the average movement speed (according to [League of Legends Wiki](https://leagueoflegends.fandom.com/wiki/Movement_speed)) as there is no average value for it and calculating it would take me too long (sorry!).
+So I tested some champions with different boots (they provide a different amount of bonus movement speed) and came to the average of approx. 30 seconds from the fountain (a team's respawn point) to the middle of the map.
+Not every fight happens in the center of the map, but I decided to take this as average.
+
+Now I add the 30 seconds (movement) to the 30 seconds (respawn time) which equals in a minute until a champion can join the same fight.
+
+Next, at the 15-minute mark, players usually still are on their dedicated lanes and there barely are any big fights yet.
+
+In order for one champion to compensate not killing minions, they would need to kill the opponent laner soon as they show up.
+That does not work for a solo-lane (a laner where only one champion takes place (excluding the opponent)) but it could work for the bottom lane (where there are two champions per team). 
+This would require the loosing side of the bottom lane to keep dying over and over soon as they reach the enemy champions (with a 30 seconds buffer).
+
+Thankfully, unlike the general opinion of league of legends player, player know that they should not fight again if they just lost against the enemy champions.
+This results in a player not being able to keep the required 0.67 kills per minute.
+
+Therefore, it is highly unlikeable that a player can compensate the gold income with kills without killing minions. Hence, the correlation between kills and gold income in the above heatmap is still questionable.
+
+(Sorry for this long digression, I kind of got lost in it.. I might update this section.)
+
+For more information on how to read a correlation matrix, please see [statology.org](https://www.statology.org/how-to-read-a-correlation-matrix/).
 
 ***
 
