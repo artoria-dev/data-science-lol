@@ -1386,7 +1386,7 @@ I let this to you to sort this out, but I am pretty sure it's due to the differe
 
 Lastly, here is the beloved ROC curve:
 
-![c_roc-curve](readme-files\c_roc-curve.png)
+![c_roc-curve](readme-files/c_roc-curve.png)
 
 with an AUC of **0.86** !
 
