@@ -22,9 +22,11 @@
 - [Evaluation](#evaluation)
 - [Review](#review)
 
-## Revamping The Project With Different Data
+# Revamping The Project With Different Data
 
-- [Re: Disclaimer](#re:-disclaimer)
+## Table of Content
+
+- [Re Disclaimer](#re-disclaimer)
 - [Re: Project Object](#project-object)
 - [Re: Data I Will Use This Time](#data-i-will-use-this-time)
 - [Re: Data Cleaning](#data-cleaning)
@@ -1097,7 +1099,7 @@ That is why I won't write a review here but will most likely do it at the end of
 
 ***
 
-## Re: Disclaimer
+## Re Disclaimer
 
 Okay, so this reattempt will cover less theoretical material than the original project.
 I will rather focus on the practical things I do since the procedure is basically the same.
