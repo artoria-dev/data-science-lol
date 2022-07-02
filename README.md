@@ -4,8 +4,6 @@
 
 # Data Science Project On League Of Legends
 
-***
-
 ## Table of Content
 
 - [Disclaimer](#disclaimer)
@@ -35,8 +33,6 @@
 - [Re Building The Model](#re-building-the-model)
 - [Re Evaluation](#re-evaluation)
 - [Re Review](#re-review)
-
-***
 
 ## Disclaimer
 
@@ -194,8 +190,6 @@ The script for this could look like this:
 - I will gather all the player/summoner names to track by myself
 
 Great. I need a coffee after that section..
-
-***
 
 ## The Match Data
 
@@ -369,8 +363,6 @@ This is required to determine which team won the game, obviously.
 
 Performance-wise I will filter all the necessary values and store them a csv file for each API call.
 
-***
-
 ## The Actual Match Data I Was Able To Acquire
 
 Unlike the prior section, where I covered the theoretical way to get the data, this chapter is about the issues I faced when *practically* getting the data.
@@ -437,8 +429,6 @@ Hence, I will store my data with the feather-file-format by reading the match-da
 
 I could've saved the data from the csv directly into a feather, but I prefer my way due to convenience reasons.
 
-***
-
 ## Why My Data Could Be Biased
 
 This is a rather theoretical side-chapter for disclaimer reasons.
@@ -466,8 +456,6 @@ Sadly, there has been a huge change in the champions stats in a recent patch (th
     efficient and effective than items which increase a champion's damage.
     Now, after that durability patch, a champion needs to spend less gold to get a decent amount of durability
     while a different type of champion requires more gold to get the equivalent amount of damage-stats.
-
-***
 
 ## Data Cleaning
 
@@ -603,8 +591,6 @@ Hence, I can proudly say it's *highly* unlikeable to have the same data for diff
 
 Another mistake I made was with rounding the values incorrectly, resulting in *all* variables to be of type integer.
 
-***
-
 ## Exploratory Data Analysis
 
 In this chapter I want to explore my data (obviously), want to take a look at the main characteristics and compare certain values.
@@ -708,8 +694,6 @@ Therefore, it is highly unlikeable that a player can compensate the gold income 
 
 For more information on how to read a correlation matrix, please see [statology.org](https://www.statology.org/how-to-read-a-correlation-matrix/).
 
-***
-
 ## Feature Engineering
 
 This chapter covers the creation of variables which are most likely going to have an impact of the probability of winning.
@@ -763,8 +747,6 @@ I get in return:
     36878            1  ...                        441
     860              1  ...                         75
 
-***
-
 ## Dealing With Multicollinearity
 
 Multicollinearity describes the issue with multiple variables correlating when predicting the same outcome.
@@ -789,8 +771,6 @@ Now I cannot tell which value induces the other as both seem to be valuable yet 
 
 I will deal with it for now.
 If I am not happy with the result of the model I might tweak the values later.
-
-***
 
 ## Building The Model
 
@@ -1010,8 +990,6 @@ Support doesn't change between models but instead diagnoses the evaluation proce
 Okay, so if I compare each weighted average score, the XGBoost Classifier wins with 0.79 (0.01 over the Random Forest Classifier).
 I might get different results if I tweak the input parameters for each classifier, but I am happy the way it is now.
 
-***
-
 ## Evaluation
 
 Here we are. After nearly 7.000 (seven-thousand) words and 45.000 (forty-five thousand) digits later I have finally reached the point of truth: How precise is my model?
@@ -1041,8 +1019,6 @@ Here is the final table of the classification report using my testing data on th
 That results in my model being able to predict more than two-thirds of all the games.
 
 Not bad.
-
-***
 
 *The crowd: Can't we have another plot, please?*  
 Sure!
@@ -1082,8 +1058,6 @@ To get the ROC-curve:
 
 ![roc-curve](readme-files/roc-curve.png)
 
-***
-
 ## Review
 
 Originally, I planned to write a review for this project here.
@@ -1097,8 +1071,6 @@ That is why I won't write a review here but will most likely do it at the end of
 
 # Revamp: Data Science Project On League Of Legends
 
-***
-
 ## Re Disclaimer
 
 Okay, so this reattempt will cover less theoretical material than the original project.
@@ -1106,8 +1078,6 @@ I will rather focus on the practical things I do since the procedure is basicall
 Still I will try to add some new pointers to it and explain the differences to the original project.
 
 Also, I had some break inbetween the projects. From now on, all data is up-to-date as of July 2020.
-
-***
 
 ## Re Project Object
 
@@ -1261,8 +1231,6 @@ By the way, by using JetBrain's Data Spell, I can see a nice preview of the csv-
 
 (No, this is not surreptitious advertising. I am not getting paid for this :c )
 
-***
-
 ## Re Data Cleaning
 
 Nearly the same as I did before.
@@ -1284,8 +1252,6 @@ Nearly the same as I did before.
 With 43.601 (forty-three-thousand six-hundred and one) matches in my raw data, I ended up on **35.339** (thirty-five-thousand three-hundred and thirty-nine) matches after removing 8.262 (eight-hundred and twenty-six) duplicates or unwanted data.
 
 Honestly not bad. I know I originally was aiming for 100k (one-hundred thousand) games, but taking the few different games happening in the apex tiers into consideration, over 30k (thirty-thousand) games are totally fine.
-
-***
 
 ## Re Exploratory Data Analysis
 
@@ -1327,8 +1293,6 @@ in that order.
 
 Kills seem to be more important in lower tiers than in higher tiers.
 
-***
-
 ## Re Feature Engineering
 
 Unlike in the first attempt when I used the data I had plus additional columns, I will only use the additional columns.
@@ -1345,8 +1309,6 @@ Here is an overview of the columns I will use:
     df2['blueTeamDragonsKilledDiff'] = (df.blueTeamDragonsKilled - df.redTeamDragonsKilled)
     df2['blueTeamHeraldsKilledDiff'] = (df.blueTeamHeraldsKilled - df.redTeamHeraldsKilled)
     df2['blueTeamWin'] = df.blueTeamWin
-
-***
 
 ## Re Building The Model
 
@@ -1400,8 +1362,6 @@ Therefore, I will try to keep the batch size as great as possible while still ke
 
 I decided to use 1000 as batch size with 500 epochs.
 
-***
-
 ## Re Evaluation
 
 After training my model I ended up on:
@@ -1431,8 +1391,6 @@ Lastly, here is the beloved ROC curve:
 ![c_roc-curve](readme-files\c_roc-curve.png)
 
 with an AUC of **0.86** !
-
-***
 
 ## Re Review
 
