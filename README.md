@@ -22,6 +22,18 @@
 - [Evaluation](#evaluation)
 - [Review](#review)
 
+## Revamping The Project With Different Data
+
+- [Re: Disclaimer](#disclaimer)
+- [Re: Project Object](#project-object)
+- [Re: Data I Will Use This Time](#data-i-will-use-this-time)
+- [Re: Data Cleaning](#data-cleaning)
+- [Re: Exploratory Data Analysis](#exploratory-data-analysis)
+- [Re: Feature Engineering](#feature-engineering)
+- [Re: Building The Model](#building-the-model)
+- [Re: Evaluation](#evaluation)
+- [Re: Review](#review)
+
 ***
 
 ## Disclaimer
@@ -137,7 +149,6 @@ Resulting in:
 |-----------------|------------|-------------|--------|---------|----------|--------|--------|--------|-------|------------|
 | Players Tracked | 8          | 8           | 8      | 14      | 65       | 166    | 236    | 179    | 36    | **720**    |
 | Games Tracked   | 800        | 800         | 800    | 1.400   | 6.500    | 16.600 | 23.600 | 17.900 | 3.600 | **72.000** |
-
 (Don't worry, that's the last table for this section)
 
 Here is the final graph which surely is not 100 % in compliance with the rank distribution as seen in the picture above, but it is the closest I can get:
@@ -813,6 +824,33 @@ Now, usually you would rather tend to use a [sigmoid activation function](https:
 Let's say the sigmoid activation function returns a 0.89 for a win, then the model is 89 % confident the input variables result in a win.
 It will also be 11 % confident that the input variables lead to a loss. Of course, I use the greater value.
 
+Before using a sigmoid function, people used to use a 'step' function as a trigger. This function returns 1 if the input is greater than 0, and 0 otherwise.
+
+Here is a different view to this. Note that this example displays a model with two input variables, two hidden layers with three neurons each and one output variable:
+
+```mermaid
+flowchart LR
+    i1 & i2 --> 1h1 & 1h2 & 1h3
+    1h1 & 1h2 & 1h3 --> 2h1 & 2h2 & 2h3
+    2h1 & 2h2 & 2h3 --> o1 & o2
+    
+    subgraph input layer
+    i1 & i2
+    end
+    
+    subgraph hidden layer
+    1h1 & 1h2 & 1h3
+    end
+    
+    subgraph second hidden layer
+    2h1 & 2h2 & 2h3
+    end
+    
+    subgraph output layer
+    o1 & o2
+    end
+```
+
 Now for the practical part.
 
 First I split my data into categorical and continuous variables. Categorical values can only be one of two states, such as a booleans.
@@ -1046,4 +1084,389 @@ To get the ROC-curve:
 
 ## Review
 
-tbd
+Originally, I planned to write a review for this project here.
+Things like I did wrong, I did well and so on.
+
+I planned to revamp this project from the beginning, getting new different data and give it another different approach.
+
+That is why I won't write a review here but will most likely do it at the end of the whole project.
+
+***
+
+# Revamp: Data Science Project On League Of Legends
+
+***
+
+## Re: Disclaimer
+
+Okay, so this reattempt will cover less theoretical material than the original project.
+I will rather focus on the practical things I do since the procedure is basically the same.
+Still I will try to add some new pointers to it and explain the differences to the original project.
+
+Also, I had some break inbetween the projects. From now on, all data is up-to-date as of July 2020.
+
+***
+
+## Re: Project Object
+
+The intention behind this reattempt is to sort out mistakes I made the first time, to compare challenger games with the average games and maybe find out what the most important factor is to win a match of League Of Legends.
+
+Also, unlike in the first attempt, I will use tensorflow's keras library to build my model this time.
+
+## Re: Data I Will Use This Time
+
+In this reattempt, I will use *only* data from challenger games. The procedure will basically be the same as in the first attempt.
+
+If you remember my 'lazy' script from earlier to get the other participant's in-game names, you could say I can simply use this.
+But I cannot! (Hah, gotcha!)
+This is due to the fact, that the endpoint for this only offers games up the diamond tier, which is not what I want.
+
+Therefore, I need to use a different approach. As you remember, the returning JSON-dictionary returns a list of participants with their corresponding UUIDs
+I will need to gather a few UUIDs from challenger tier player, iterate over their games and get other participants UUIDs.
+The issue with this approach is that I could get UUIDs of player which are not challenger tier.
+Hence, I will need to add an extra step to sort these out.
+
+Or do I? Well, that would be the way to go if the Riot Games API wouldn't offer a specific endpoint to get a lot of challenger tier player.
+(Phew..).
+
+Thankfully I can use the LEAGUE-V4-'/lol/league/v4/challengerleagues/by-queue/{queue}'-endpoint.
+By passing the game mode (which will be ranked solo queue) I can get a list of challenger tier players and their respective summonerIds and summoner names.
+
+Please note, all the scripts will be marked with a 'c_' prefix in order to differentiate them from the original scripts.
+E.g. 'get-match-data.py' will be called 'c_get-match-data.py'.
+
+Here is a pseudofied version of returning JSON-dictionary:
+
+    tier: 'CHALLENGER',
+    leagueId: 'some useless id',
+    queue: 'RANKED_SOLO_5x5',
+    name: 'Nunu's Lancers, # cosmetic name set by Riot Games
+    entries
+        summonerId
+        summonerName
+        leaguePoints
+        wins
+        losses
+        veteran
+        freshBlood
+        hotStreak
+
+There is one entry for each player in that specific league (in this case, 'Nunu's Lancers').
+
+Now the SUMMONER-V4-endpoint offers a way to get the player's UUID by passing the summonerId.
+But I won't use this as Riot Games would blacklist me if I would query too many summonerIds which don't exist (they put a warning on this endpoint).
+
+Therefore, I will just get the summoner name again and do it the same way as before to get the match data (please read the chapter [Acquiring Data](#acquiring-data) and following.)
+
+Here is the script I will use to get the summoner names:
+
+    import requests
+    import time
+    
+    apiKey = 'YOUR-RIOT-GAMES-API-KEY'
+    
+    response = requests.get('https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key=' + apiKey)
+    with open('c_summoner-names.txt', 'a') as f:
+        for entry in response.json()['entries']:
+            print(entry['summonerName'])
+            try:
+                f.write(entry['summonerName'] + '\n')
+            except UnicodeEncodeError:
+                pass
+        time.sleep(1.3)  # 1.2 required for api rate limitation, 1.3 used for safety
+
+Note that I need the try-except block to prevent the script from crashing if the summoner name is not in the correct encoding.
+
+I have the script running as of writing this. I don't know if it will ever stop running.
+Well, since I have some time left while getting the summoner names, I can do some math.
+
+I aim to get at least the same number of games as before (70k, seventy thousand).
+Well, rather straight go for 100k (one-hundred thousand) games. Why? Because I can (and it was the original intended number of games).
+
+I can get 100 games per player.
+Resulting in 1k (one thousand) challenger tier players required (assuming each has at least a hundred games played).
+My script got a delay of 1.2 (Riot Games API rate limitation) + 0.1 (safety) + 0.1 (extra time) = 1.4 seconds per player.
+Resulting in 1400 seconds or roughly 24 minutes for 1k (one thousand) players. Not bad.
+
+Well, after calculating this, the script actually stopped running and I got presented with 288 players (after removing duplicates).
+The number will even be less when filtering out the names with special characters.
+
+I need a different approach to get the summoner names.
+Looking at Riot Games experimental LEAGUE-EXP-V4-endpoint, I can basically get the same data as before.
+But this endpoint offers a 'page'-parameter. I should be able to get more summoner names like this.
+
+Here is the modified script:
+
+    import requests
+    import time
+    
+    apiKey = 'YOUR-RIOT-GAMES-API-KEY'
+    page = 1
+    playersGathered = 0
+    
+    while playersGathered < 2000:
+        response = requests.get(
+            'https://euw1.api.riotgames.com/lol/league-exp/v4/entries/RANKED_SOLO_5x5/CHALLENGER/I?page=' + str(page) + '&api_key=' + apiKey)
+        with open('c_summoner-names.txt', 'a') as f:
+            for summoner in response.json():
+                try:
+                    f.write(summoner['summonerName'] + '\n')
+                    playersGathered += 1
+                    print(f'page: {page} | players gathered: {playersGathered} | summoner name: {summoner["summonerName"]}')
+                except UnicodeEncodeError:
+                    pass
+        time.sleep(1.3)  # 1.2 required for api rate limitation, 1.3 used for safety
+        page += 1
+
+Please note, this endpoint requires the divison of a tier as input.
+No apex tier has got a division, which is why we use 'I' as input.
+
+    Sidenote:
+    Apex tiers include masters, grandmasters and challenger tiers.
+
+I know, I said I only needed 1k (one thousand) players, but I chose to get more than that to ensure I end up with enough player names after removing duplicates and names with special characters.
+
+Running this script took about 3 seconds and it stopped running after getting 287 players.
+Now I was confused it only fetched so few players until I realised I am querying challenger tier, the highest tier in League of Legends.
+There aren't even that many players in this tier! After checking the ladder, I found that the top 300 players are in challenger tier and the next 700 player are in grandmaster tier.
+That forces me to also use the grandmaster tier. I might even use masters tier if necessary, but I try not to.
+
+I can simply exchange the query string in above script to get the grandmaster tier players.
+
+Now I end up with around 950 players (after removing duplicates) including challenger and grandmaster tier player.
+I will try to get their PUUIDs and hope that there aren't too many players with special characters in their names.
+
+Quick math intermission:  
+950 player times 1.4 seconds delay = 1330 seconds or roughly 22 minutes.
+
+After I had the script running, I ended up on 882 UUIDS (after removing duplicates).
+
+Next up is getting the match history data of these players.
+There will probably be a lot of duplicates as there aren't many players in higher tiers and they often share a game.
+
+At this point I just have to deal with the number of match ids because I simply can't get any more.
+
+After removing 52.192 (fifty-two-thousand one-hundred and ninety-two) duplicates, I ended up with 35.816 (thirty-five-thousand eight-hundred and sixteen) match ids.
+
+(I had to remove 59.3 % of matches due to duplication !!)
+
+Anyhow, the next step will be getting the actual match data of each of the games.
+The procedure will be the same as before. I will tweak the code a bit to prevent integer division this time.
+
+By the way, by using JetBrain's Data Spell, I can see a nice preview of the csv-file in which the data will be saved:
+
+![data-spell-advertisement](readme-files/data-spell-advertisement.png)
+
+(No, this is not surreptitious advertising. I am not getting paid for this :c )
+
+***
+
+## Re: Data Cleaning
+
+Nearly the same as I did before.
+
+    import pandas as pd
+
+    df = pd.read_feather('data-final/c_raw-data.feather')
+    
+    df = df[df.blueTeamWin != 2]
+    df = df.drop_duplicates()
+    df = df[df.gameDuration < 6000]
+    df = df[df.blueTeamGoldPerMinute != 0]
+    df = df[df.redTeamGoldPerMinute != 0]
+    
+    df = df.reset_index(drop=True)
+    
+    df.to_feather('data-final/c_data.feather')
+
+With 43.601 (forty-three-thousand six-hundred and one) matches in my raw data, I ended up on **35.339** (thirty-five-thousand three-hundred and thirty-nine) matches after removing 8.262 (eight-hundred and twenty-six) duplicates or unwanted data.
+
+Honestly not bad. I know I originally was aiming for 100k (one-hundred thousand) games, but taking the few different games happening in the apex tiers into consideration, over 30k (thirty-thousand) games are totally fine.
+
+***
+
+## Re: Exploratory Data Analysis
+
+I used the same code to plot the data as before. Here are the results:
+
+![c_winrate](readme-files/c_winrate.png)
+
+Once again I compared my data to [League Of Graphs's](https://www.leagueofgraphs.com/de/rankings/blue-vs-red/euw/master) data.
+As of League Of Graphs, in EU West in the apex tiers, the red team has got a win ware of 51.1 % which is represented by my data (nice!).
+
+![c_winrateperfirstblood](readme-files/c_winrateperfirstblood.png)
+
+Unlike in lower tiers, in the apex tiers the blue team has got a higher chance of winning a match if they did not get first blood.
+
+![c_cspmgpmcorrelation](readme-files/c_cspmgpmcorrelation.png)
+
+This plot shows the correlation between the cs per minute and gold per minute even better than the plot before as there are fewer games used.
+That shows how important cs'ing is in order to get a decent amount of gold.
+
+And the most interesting plot again:
+
+![c_heatmap](readme-files/c_heatmap.png)
+
+The most important factors for blue team to win seem to be:
+
+- the total gold
+- the average level
+- the kills
+
+in that order.
+
+To compare this to the average league of legends player's data, the order was:
+
+- the total gold
+- the kills
+- the average level
+
+in that order.
+
+Kills seem to be more important in lower tiers than in higher tiers.
+
+***
+
+## Re: Feature Engineering
+
+Unlike in the first attempt when I used the data I had plus additional columns, I will only use the additional columns.
+Here is an overview of the columns I will use:
+
+    df2['blueTeamWardRetentionRatio'] = (df.blueTeamWardsPlaced - df.redTeamWardsDestroyed)/df.blueTeamWardsPlaced
+    df2['blueTeamNetKills'] = (df.blueTeamKills - df.redTeamKills)
+    df2['blueTeamJungleMinionsKilledDiff'] = (df.blueTeamTotalJungleMonsterKilled - df.redTeamTotalJungleMonsterKilled)
+    df2['blueTeamMinionsKilledDiff'] = (df.blueTeamTotalMinionsKilled - df.redTeamTotalMinionsKilled)
+    df2['blueTeamAvgLevelDiff'] = (df.blueTeamAvgLevel - df.redTeamAvgLevel)
+    df2['blueTeamCsPerMinuteDiff'] = (df.blueTeamCsPerMinute - df.redTeamCsPerMinute)
+    df2['blueTeamGoldPerMinuteDiff'] = (df.blueTeamGoldPerMinute - df.redTeamGoldPerMinute)
+    df2['blueTeamTowerDestroyedDiff'] = (df.blueTeamTowerDestroyed - df.redTeamTowerDestroyed)
+    df2['blueTeamDragonsKilledDiff'] = (df.blueTeamDragonsKilled - df.redTeamDragonsKilled)
+    df2['blueTeamHeraldsKilledDiff'] = (df.blueTeamHeraldsKilled - df.redTeamHeraldsKilled)
+    df2['blueTeamWin'] = df.blueTeamWin
+
+***
+
+## Re: Building The Model
+
+Now onto the question of how large I want my neural network to be.
+So I know my neural network needs to have 10 input layers and two output layers.
+The interesting part will be the number of hidden layers.
+As of [this]('https://kharshit.github.io/blog/2018/04/27/how-deep-should-neual-nets-be#:~:text=The%20optimal%20size%20of%20the,simple%20is%20better%20than%20complex.') source, I start of with three hidden layers with six neurons each.
+
+I might tweak this scale later depending on the model accuracy.
+
+Next up I need some kind of prevention against overfitting.
+I will do this by adding regularization on specific layers.
+I can do this simply when adding a neuron by adding the 'activity_regularizer' parameter to the layer:
+
+    model.add(Dense(32, activation='relu', activity_regularizer=l1(0.001)))
+
+Please note, this is a sample layer using 32 neurons and the rectified linear activation function (ReLU).
+
+Also, I will use the 'l1' regularization function as this activity is calculated as the sum of *absolute* values.
+
+Now if I want keras to fit my model, I can do it like this:
+
+    model.fit(X, y, epochs=200, batch_size=10)
+
+Epochs is the number of times the model is trained on the data.
+Batch size defines the number of samples that will be propagated through the network.
+
+Now, what batch size should I use? There are different approaches to this:
+
+***Full-Batch Gradient Descent***
+
+- computes the gradient for all training samples first and then updates the parameters
+- inefficient for large datasets as the gradient has to be evaluated for each summand
+
+***Mini-Batch Gradient Descent***
+
+- computes the gradient for batches of the training sample only before updating the parameter
+
+***Stochastic Gradient Descent***
+
+- computes the gradient for one training sample and updates the parameter immediately
+- basically the same as mini-batch gradient descent with a batch size of 1
+
+Here is a visualisation of the comparison of the three methods (where 'batch' is the full-batch gradient descent):
+![batch-size](readme-files/batch-size.png)  
+([source](https://stats.stackexchange.com/questions/153531/what-is-batch-size-in-neural-network))
+
+That results in smaller batches being less accurate as the mini-batch gradient descent fluctuates more than the full-batch gradient descent.
+
+Therefore, I will try to keep the batch size as great as possible while still keeping the training time low.
+
+I decided to use 1000 as batch size with 500 epochs.
+
+***
+
+## Re: Evaluation
+
+After training my model I ended up on:
+
+    Epoch 498/500
+    36/36 [==============================] - 0s 1ms/step - loss: 0.4646 - accuracy: 0.7748
+    Epoch 499/500
+    36/36 [==============================] - 0s 1ms/step - loss: 0.4646 - accuracy: 0.7754
+    Epoch 500/500
+    36/36 [==============================] - 0s 1ms/step - loss: 0.4646 - accuracy: 0.7751
+    1105/1105 [==============================] - 1s 820us/step - loss: 0.4644 - accuracy: 0.7752
+    Accuracy: 77.52
+
+an accuracy of 77.52 % ! How good is that?!
+
+Now thinking about it.. In the first attempt my model had a 68 % accuracy.
+The difference in the models' accuracy may be due to one of these factors:
+
+- the difference data I used (overall respectively to the rank distribution vs. apex tiers only)
+- the difference model classifier I used
+- the difference types of data I used (static and net values vs. only differences/net values)
+
+I let this to you to sort this out, but I am pretty sure it's due to the difference data I used (overall vs. apex tiers).
+
+Lastly, here is the beloved ROC curve:
+
+![c_roc-curve](readme-files\c_roc-curve.png)
+
+with an AUC of **0.86** !
+
+***
+
+## Re: Review
+
+Don't worry, I won't bother you with another huge article here.
+I will just put a list of mistakes/issues I encountered or made so that you can easily avoid them when recreating this project.
+
+***Set yourself a clear goal on what to achieve***
+
+When I first started this project, I was rather hyped to do data-science itself, without even knowing where to go.
+That lead me jump around a lot without any direction.
+
+***Get familiar with the data***
+
+I mean understanding Riot Games' API endpoints was already hard enough though.
+But finally looking at a matches data and trying to figure a system within the 40k (fourty-thousand) lines in the JSON-dictionary is something else.
+
+***Trial and error in small steps***
+
+When I was running the script to get the match data, I had several times when I had to stop the script, change something in the script and restart it.
+Now best of would have been to intentionally stop the script after a couple of minutes, check for mistakes in the output data and update the script.
+That saves a ton of time.
+
+***Save the data after every change***
+
+Well, it's pain to redo all the changes again if you mess up the data, obviously.
+
+***Do not decide to use that one model classifier***
+
+In the entirety of this project, I used different classifier of different libraries.
+While fitting the models, I figured different classifier work better on a specific set of data.
+Best of would have been to use multiple classifier on the same data and then evaluate on the best performing one.
+Or, of course, compare the classifier if that is your goal.
+
+***
+
+Sorry for the long README. Here is a potato:
+
+![potato](readme-files/potato.jpg)  
+(If you know, you know)

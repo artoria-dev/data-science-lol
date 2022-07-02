@@ -50,7 +50,7 @@ def avgLevelByCs():
 
 def heatmap():
     df.drop(df.iloc[:, 16:33], axis=1, inplace=True)
-    fig = plt.figure(figsize=(15, 30))
+    fig = plt.figure(figsize=(30, 15))
     heatMap = sns.heatmap(df.loc[:].corr(), annot=True, cmap='jet')
     heatMap.set_yticklabels(heatMap.get_yticklabels(), rotation=0)
     heatMap.set_xticklabels(heatMap.get_xticklabels(), rotation=35)
@@ -58,8 +58,8 @@ def heatmap():
 
 
 if __name__ == '__main__':
-    df = pd.read_feather('data-final/data.feather')
-    # winRate()
-    # winRatePerFirstBlood()
-    # avgLevelByCs()
-    # heatmap()
+    df = pd.read_feather('data-final/c_data.feather')
+    winRate()
+    winRatePerFirstBlood()
+    avgLevelByCs()
+    heatmap()
