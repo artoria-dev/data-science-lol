@@ -27,14 +27,14 @@
 ## Table of Content
 
 - [Re Disclaimer](#re-disclaimer)
-- [Re: Project Object](#project-object)
-- [Re: Data I Will Use This Time](#data-i-will-use-this-time)
-- [Re: Data Cleaning](#data-cleaning)
-- [Re: Exploratory Data Analysis](#exploratory-data-analysis)
-- [Re: Feature Engineering](#feature-engineering)
-- [Re: Building The Model](#building-the-model)
-- [Re: Evaluation](#evaluation)
-- [Re: Review](#review)
+- [Re Project Object](#re-project-object)
+- [Re Data I Will Use This Time](#re-data-i-will-use-this-time)
+- [Re Data Cleaning](#re-data-cleaning)
+- [Re Exploratory Data Analysis](#re-exploratory-data-analysis)
+- [Re Feature Engineering](#re-feature-engineering)
+- [Re Building The Model](#re-building-the-model)
+- [Re Evaluation](#re-evaluation)
+- [Re Review](#re-review)
 
 ***
 
@@ -1109,13 +1109,13 @@ Also, I had some break inbetween the projects. From now on, all data is up-to-da
 
 ***
 
-## Re: Project Object
+## Re Project Object
 
 The intention behind this reattempt is to sort out mistakes I made the first time, to compare challenger games with the average games and maybe find out what the most important factor is to win a match of League Of Legends.
 
 Also, unlike in the first attempt, I will use tensorflow's keras library to build my model this time.
 
-## Re: Data I Will Use This Time
+## Re Data I Will Use This Time
 
 In this reattempt, I will use *only* data from challenger games. The procedure will basically be the same as in the first attempt.
 
@@ -1263,7 +1263,7 @@ By the way, by using JetBrain's Data Spell, I can see a nice preview of the csv-
 
 ***
 
-## Re: Data Cleaning
+## Re Data Cleaning
 
 Nearly the same as I did before.
 
@@ -1287,7 +1287,7 @@ Honestly not bad. I know I originally was aiming for 100k (one-hundred thousand)
 
 ***
 
-## Re: Exploratory Data Analysis
+## Re Exploratory Data Analysis
 
 I used the same code to plot the data as before. Here are the results:
 
@@ -1329,7 +1329,7 @@ Kills seem to be more important in lower tiers than in higher tiers.
 
 ***
 
-## Re: Feature Engineering
+## Re Feature Engineering
 
 Unlike in the first attempt when I used the data I had plus additional columns, I will only use the additional columns.
 Here is an overview of the columns I will use:
@@ -1348,7 +1348,7 @@ Here is an overview of the columns I will use:
 
 ***
 
-## Re: Building The Model
+## Re Building The Model
 
 Now onto the question of how large I want my neural network to be.
 So I know my neural network needs to have 10 input layers and two output layers.
@@ -1402,7 +1402,7 @@ I decided to use 1000 as batch size with 500 epochs.
 
 ***
 
-## Re: Evaluation
+## Re Evaluation
 
 After training my model I ended up on:
 
@@ -1434,7 +1434,7 @@ with an AUC of **0.86** !
 
 ***
 
-## Re: Review
+## Re Review
 
 Don't worry, I won't bother you with another huge article here.
 I will just put a list of mistakes/issues I encountered or made so that you can easily avoid them when recreating this project.
