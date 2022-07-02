@@ -24,7 +24,7 @@
 
 ## Revamping The Project With Different Data
 
-- [Re: Disclaimer](#disclaimer)
+- [Re: Disclaimer](#re:-disclaimer)
 - [Re: Project Object](#project-object)
 - [Re: Data I Will Use This Time](#data-i-will-use-this-time)
 - [Re: Data Cleaning](#data-cleaning)
