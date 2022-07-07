@@ -145,6 +145,7 @@ Resulting in:
 |-----------------|------------|-------------|--------|---------|----------|--------|--------|--------|-------|------------|
 | Players Tracked | 8          | 8           | 8      | 14      | 65       | 166    | 236    | 179    | 36    | **720**    |
 | Games Tracked   | 800        | 800         | 800    | 1.400   | 6.500    | 16.600 | 23.600 | 17.900 | 3.600 | **72.000** |
+
 (Don't worry, that's the last table for this section)
 
 Here is the final graph which surely is not 100 % in compliance with the rank distribution as seen in the picture above, but it is the closest I can get:
