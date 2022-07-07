@@ -794,7 +794,7 @@ The input variables are in blue to the left. In this example there are three inp
 The orange dots represent nodes (which can also scale infinitely). All nodes within one column are counted as a 'hidden layer'.
 There can be as many hidden layer as one wishes. The more there are, the more confident will the model be.
 
-Am input can *walk* their way via the nodes (left to right) until it hits the output. The ways are in purple.
+An input can *walk* their way via the nodes (left to right) until it hits the output. The ways are in purple.
 Each way an input can go, receives a certain unique 'weight' (usually between 0 and 1).
 Inside a node the arriving data (coming from the input or other nodes) will be multiplied with their weights and summed up with the other input data.
 
