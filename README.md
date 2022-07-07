@@ -1,3 +1,5 @@
+(This README is still WIP)
+
 3 a.m. productions presents:
 
 # Data Science Project On League Of Legends
@@ -92,7 +94,7 @@ Since I am aiming for a data set including up to 100k (one-hundred thousand) mat
 Sadly, Riot Games API keys are only valid for 24 hours.
 Hence, I will have to reduce my data to around 72k (seventy-two thousand) entries (you can do the math by yourself, who am I to note down literally everything is this README).
 
-The next issues will be getting the right amount of PUUIDs and an even distribution of the player's elo.
+The next issues will be getting the correct amount of PUUIDs and an even distribution of the player's elo.
 
     Sidenote:
     A player's 'elo' determines a player's skill.
@@ -157,7 +159,8 @@ Since I cannot divide 8 player by 11 different regions, and I can only test it o
 The very last issue to handle is getting such an amount of player. Remember, each has to have at least 100 ranked games played.
 I could grab myself a few player, iterate over their matches played and read the other 9 player in their game and iterate over their games aswell.
 That sounds like a nice way to do. Sadly I cannot ensure that every player has more than 100 ranked games played when doing it this way.
-Therefore, I will grab all player by hand. Yes, all 720.
+Therefore, I will grab all player by hand. Yes, all 720.  
+(I will do this later, though!)
 
     Sidenote:
     There are different game modes player can play in League of Legends.
@@ -396,6 +399,7 @@ Also, if you wish to recreate this project, I highly recommend using sub-diction
     events = data['info']['frames'][x]['events']
 
 and iterate over 'events' instead of the whole JSON-dictionary.
+
 By using the python module '[timeit](https://docs.python.org/3/library/timeit.html)' I figured using sub-dictionaries is more than twice as efficient performance-wise:
 
 - 33.92717879999999 time units on average without sub-dictionaries
@@ -417,7 +421,7 @@ Now there are different ways of storing dataframes. The direct comparison shows 
 
 ![dataframes-storage-comparison](readme-files/dataframes-storage-comparison.png)
 
-([Source](https://towardsdatascience.com/the-best-format-to-save-pandas-data-414dca023e0d), please take a look at this. There are several interesting comparisons made)
+([Source](https://towardsdatascience.com/the-best-format-to-save-pandas-data-414dca023e0d), please take a look at this. There are several interesting comparisons made. Also, sorry for black font on black background :c )
 
 Hence, I will store my data with the feather-file-format by reading the match-data from the csv into a pandas dataframe and saving it as feather:
 
@@ -432,7 +436,7 @@ I could've saved the data from the csv directly into a feather, but I prefer my 
 
 This is a rather theoretical side-chapter for disclaimer reasons.
 
-The main issues here are the different playstyles and ability to realise enemy mistakes to abuse for each tier/ELO.
+The main issues here are the different playstyles and the ability to realise enemy mistakes to abuse for each tier/ELO.
 A player can always outplay another player despite him having less gold, experience or stats.
 That is why the stats I acquired become less important the lower the elo.
 
@@ -656,7 +660,7 @@ In the sake of science, I still try to proof this by showing a table of the tota
     In later stages of the game, the cannon spawns more often.
     A melee minions is worth 21 gold, a caster 14 and a cannon 60 to 90 depending on game time.
 
-A kill is worth 400 gold. To compensate the gold acquired by killing minions, one would have to kill a champion every ~1.5 minutes (calculated with values at 15 minute mark).
+A kill is worth 300 gold. To compensate the gold acquired by killing minions, one would have to kill a champion every minute (calculated with values at 15 minute mark).
 Now, as a prerequisite for the next part, the average level at the 15-minute mark is 9.1240395 (taken from my data).
 Next up, I calculate the total death time of a champion with this level (death time increases over time):
 
@@ -685,7 +689,7 @@ That does not work for a solo-lane (a laner where only one champion takes place 
 This would require the loosing side of the bottom lane to keep dying over and over soon as they reach the enemy champions (with a 30 seconds buffer).
 
 Thankfully, unlike the general opinion of league of legends player, player know that they should not fight again if they just lost against the enemy champions.
-This results in a player not being able to keep the required 0.67 kills per minute.
+This results in a player not being able to keep the required 1 kills per minute.
 
 Therefore, it is highly unlikeable that a player can compensate the gold income with kills without killing minions. Hence, the correlation between kills and gold income in the above heatmap is still questionable.
 
@@ -781,10 +785,12 @@ Now given is a graph, with certain values:
 
 In blue is the data given. My model in orange tries to be as close to the data as possible.
 In this case I just chose the mean of the data for demonstration purposes.
-Now If I want to test my model and ask it what my mark will be if I study for 6 hours, it will predict my mark being 45 % (in green).
+Now If I want to test my model and ask it what my mark will be if I study for 6 hours, it will predict my mark being 45 % (in green) even though it actually is somewhat around 62 % but that is because of the poor trained demonstration-model.
 
-This is what is called a linear relationship. What if one has more input variables than just the amount of hours studied, like I do in my data?
-That is where neural networks come into place. Here is a quick illustration:
+This is what is called a linear relationship or neural network.
+
+What if one has more input variables than just the amount of hours studied, like I do in my data?  
+Here is a quick illustration of a *deep* neural network:
 
 ![sample-neural-network](readme-files/sample-neural-network.png)
 
@@ -792,14 +798,15 @@ That is where neural networks come into place. Here is a quick illustration:
 
 The input variables are in blue to the left. In this example there are three input variables but than scale infinitely.
 The orange dots represent nodes (which can also scale infinitely). All nodes within one column are counted as a 'hidden layer'.
-There can be as many hidden layer as one wishes. The more there are, the more confident will the model be.
+There can be as many hidden layer as one wishes. The more there are, the more confident will the model be (well, not always.
+Please see [overfitting](https://en.wikipedia.org/wiki/Overfitting) for more information).
 
-An input can *walk* their way via the nodes (left to right) until it hits the output. The ways are in purple.
+Am input can *walk* their way via the nodes (left to right) until it hits the output. The ways are in purple.
 Each way an input can go, receives a certain unique 'weight' (usually between 0 and 1).
 Inside a node the arriving data (coming from the input or other nodes) will be multiplied with their weights and summed up with the other input data.
 
 Depending on that, a certain 'activation'-function triggers inside a node (or neuron) as if the neuron actually fires up.
-For example, if a returning value from a node returns a certain value greater than 3 the activation function returns 1 (only sample values).
+For example, if a value from a node returns a certain value greater than 3 the activation function returns 1 (only sample values).
 Now, usually you would rather tend to use a [sigmoid activation function](https://towardsdatascience.com/activation-functions-neural-networks-1cbd9f8d91d6), which would the activation function return a value between 0 and 1, and not 0 or 1.
 
 Let's say the sigmoid activation function returns a 0.89 for a win, then the model is 89 % confident the input variables result in a win.
@@ -831,6 +838,9 @@ flowchart LR
     o1 & o2
     end
 ```
+
+The difference between a neural network and a *deep* neural network is the amount of hidden layers.
+If the model has got one hidden layer, it is a neural network, whereas if it has got two or more hidden layers, it is a *deep* neural network.
 
 Now for the practical part.
 
@@ -891,7 +901,7 @@ Okay, for the actual model I am using the library '[scikit-learn](https://scikit
 I got my data set up and ready to be classified in a model. I will use different kind of classifier and compare them.
 
 First off, the 'Logistic Regression', or 'Linear Regression'.
-I showed this type or regression before (the plot with the students and their marks).
+I showed this type or regression before (the plot with the students and their marks, above my artwork).
 
     logReg = LogisticRegression(solver='lbfgs', max_iter=100000)
     logReg.fit(df_train.loc[:, df_train.columns != 'blueTeamWin'], df_train.blueTeamWin)
@@ -924,7 +934,7 @@ I implemented this by calling the respective class:
     XGB = XGBClassifier()
     XGB.fit(df_train.loc[:, df_train.columns != 'blueTeamWin'], df_train.blueTeamWin)
 
-Just like I was able to adjust the nodes in the prior examples when calling the class, I could dothis here aswell, but I will stay with the default for now (Seriously, check their documentation. The list of arguments is tremendous).
+Just like I was able to adjust the nodes in the prior examples when calling the class, I could do this here aswell, but I will stay with the default for now (seriously, check their documentation. The list of arguments is tremendous).
 
 Now I can print each of the classifier's report:
 
@@ -932,7 +942,7 @@ Now I can print each of the classifier's report:
     print(classification_report(df_train.blueTeamWin, forestReg.predict(df_train.loc[:, df_train.columns != 'blueTeamWin'])))
     print(classification_report(df_train.blueTeamWin, XGB.predict(df_train.loc[:, df_train.columns != 'blueTeamWin'])))
 
-The output for each of the classifies is listed below (in nice tables, just for you..).
+The output for each of the classifies is listed below (in nice tables, just for you <3 ).
 
 Primal Logistic Regression:
 
@@ -1146,7 +1156,7 @@ Here is the script I will use to get the summoner names:
 
 Note that I need the try-except block to prevent the script from crashing if the summoner name is not in the correct encoding.
 
-I have the script running as of writing this. I don't know if it will ever stop running.
+I have the script running as of writing this. I don't know if it will ever stop running..  
 Well, since I have some time left while getting the summoner names, I can do some math.
 
 I aim to get at least the same number of games as before (70k, seventy thousand).
@@ -1188,7 +1198,7 @@ Here is the modified script:
         page += 1
 
 Please note, this endpoint requires the divison of a tier as input.
-No apex tier has got a division, which is why we use 'I' as input.
+No apex tier has got a division, which is why we use 'I' (uppercase i) as input.
 
     Sidenote:
     Apex tiers include masters, grandmasters and challenger tiers.
@@ -1205,10 +1215,10 @@ I can simply exchange the query string in above script to get the grandmaster ti
 Now I end up with around 950 players (after removing duplicates) including challenger and grandmaster tier player.
 I will try to get their PUUIDs and hope that there aren't too many players with special characters in their names.
 
-Quick math intermission:  
+*Quick math intermission:*  
 950 player times 1.4 seconds delay = 1330 seconds or roughly 22 minutes.
 
-After I had the script running, I ended up on 882 UUIDS (after removing duplicates).
+After I had the script running, I ended up on 882 UUIDs (after removing duplicates).
 
 Next up is getting the match history data of these players.
 There will probably be a lot of duplicates as there aren't many players in higher tiers and they often share a game.
@@ -1266,7 +1276,7 @@ Unlike in lower tiers, in the apex tiers the blue team has got a higher chance o
 ![c_cspmgpmcorrelation](readme-files/c_cspmgpmcorrelation.png)
 
 This plot shows the correlation between the cs per minute and gold per minute even better than the plot before as there are fewer games used.
-That shows how important cs'ing is in order to get a decent amount of gold.
+That shows how important cs'ing is in order to get a decent amount of gold (and multicollinearity..).
 
 And the most interesting plot again:
 
@@ -1312,7 +1322,7 @@ Here is an overview of the columns I will use:
 Now onto the question of how large I want my neural network to be.
 So I know my neural network needs to have 10 input layers and two output layers.
 The interesting part will be the number of hidden layers.
-As of [this]('https://kharshit.github.io/blog/2018/04/27/how-deep-should-neual-nets-be#:~:text=The%20optimal%20size%20of%20the,simple%20is%20better%20than%20complex.') source, I start of with three hidden layers with six neurons each.
+As of [this]('https://kharshit.github.io/blog/2018/04/27/how-deep-should-neual-nets-be') source, I start of with three hidden layers with six neurons each.
 
 I might tweak this scale later depending on the model accuracy.
 
@@ -1402,7 +1412,7 @@ That lead me jump around a lot without any direction.
 ***Get familiar with the data***
 
 I mean understanding Riot Games' API endpoints was already hard enough though.
-But finally looking at a matches data and trying to figure a system within the 40k (fourty-thousand) lines in the JSON-dictionary is something else.
+But finally looking at a match's data and trying to figure a system within the 40k (fourty-thousand) lines in the JSON-dictionary is something else.
 
 ***Trial and error in small steps***
 
@@ -1425,4 +1435,5 @@ Or, of course, compare the classifier if that is your goal.
 
 Sorry for the long README. Here is a potato:
 
-![potato](readme-files/potato.jpg)
+![potato](readme-files/potato.jpg)  
+(If you know, you know)
