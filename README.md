@@ -1,5 +1,3 @@
-(This README is still WIP)
-
 3 a.m. productions presents:
 
 # Data Science Project On League Of Legends
