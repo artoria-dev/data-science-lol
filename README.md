@@ -1425,5 +1425,4 @@ Or, of course, compare the classifier if that is your goal.
 
 Sorry for the long README. Here is a potato:
 
-![potato](readme-files/potato.jpg)  
-(If you know, you know)
+![potato](readme-files/potato.jpg)
