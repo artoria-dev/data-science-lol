@@ -588,7 +588,8 @@ That results in 1360909601332731015410873662102557475907671047536640000, or 1.36
 Therefore, the probability to have the same exact game out of the different given combination is 0.000000000000000000000000000000000000000000000005164780962024764 % or 5.164780962024764e-48 %.
 
 Hence, I can proudly say it's *highly* unlikeable to have the same data for different games and can safely remove the 55 duplicates.  
-(My data still contains 70.288 (seventy-thousand two-hundred and eighty-eight) entries as I removed the duplicates before).
+(My data still contains 70.288 (seventy-thousand two-hundred and eighty-eight) entries as I removed the duplicates before).  
+(Recalculate this on your own risk. This little maneuver is gonna cost you 51 years.)
 
 Another mistake I made was with rounding the values incorrectly, resulting in *all* variables to be of type integer.
 
