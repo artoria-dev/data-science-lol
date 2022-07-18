@@ -786,7 +786,7 @@ In blue is the data given. My model in orange tries to be as close to the data a
 In this case I just chose the mean of the data for demonstration purposes.
 Now If I want to test my model and ask it what my mark will be if I study for 6 hours, it will predict my mark being 45 % (in green) even though it actually is somewhat around 62 % but that is because of the poor trained demonstration-model.
 
-This is what is called a linear relationship or neural network.
+This is what is called a linear relationship.
 
 What if one has more input variables than just the amount of hours studied, like I do in my data?  
 Here is a quick illustration of a *deep* neural network:
