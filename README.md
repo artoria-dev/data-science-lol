@@ -899,8 +899,7 @@ Oh, did I mention all the code snippets are inside a methode? Hah, Gotcha!
 Okay, for the actual model I am using the library '[scikit-learn](https://scikit-learn.org/stable/)'.
 I got my data set up and ready to be classified in a model. I will use different kind of classifier and compare them.
 
-First off, the 'Logistic Regression', or 'Linear Regression'.
-I showed this type or regression before (the plot with the students and their marks, above my artwork).
+First off, the 'Logistic Regression'.
 
     logReg = LogisticRegression(solver='lbfgs', max_iter=100000)
     logReg.fit(df_train.loc[:, df_train.columns != 'blueTeamWin'], df_train.blueTeamWin)
