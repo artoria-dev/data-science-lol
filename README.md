@@ -44,7 +44,7 @@ Please note, I wrote this README *while* working on this project, which is why I
 
 Only 1 animal (me) was harmed during the realisation of this project.
 
-In case you wish to contact me for whatever reason, please use discord and find me by my tag (Artoria#8809).
+In case you wish to contact me for whatever reason, please use discord and find me by my tag (letmecook7).
 
 ## Project Object
 
