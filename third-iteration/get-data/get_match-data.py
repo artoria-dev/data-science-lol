@@ -5,13 +5,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 apiKey = '<your api key>'
 
-# Get matches
 with open('matchIds.txt', 'r') as f:
     matches = f.read().splitlines()
-
-# DEBUG skip the first 221990 entries
-matches = matches[221990:]
-
 
 def fetch_match_data(match_id):
     url = f'https://europe.api.riotgames.com/lol/match/v5/matches/{match_id}/timeline?api_key={apiKey}'
