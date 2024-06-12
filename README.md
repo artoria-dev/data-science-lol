@@ -32,6 +32,20 @@
 - [Re Evaluation](#re-evaluation)
 - [Re Review](#re-review)
 
+# Third iteration: Think a title yourself
+
+## Table of Content
+
+- [Re Re Disclaimer](#re-re-disclaimer) (Just kidding, I won't just add another `Re` everytime lol)
+- [Project Object the Third](#project-object-the-third) (Does that sound better? I am not sure..)
+- [3 Data Used](#3-data-used) (Might aswell keep it simple)
+- [Data Cleaning 3](#data-cleaning-3) (Or should I put the number behind the chapter name?)
+- [Exploratory Data Analysis 3](#exploratory-data-analysis-3) (It's boring to just add a number, isn't it?)
+- [Feature Engineering THREE](#feature-engineering-three) (No, that sounds aggressive for some reason)
+- [Building The Model III](#building-the-model-iii) (I like that, though)
+- [Evaluation IV](#evaluation-iv) (Oh, that's the end of the ToC already)
+- [Famous Last Words](#famous-last-words)
+
 ## Disclaimer
 
 This project was a uni assignment.
@@ -716,7 +730,7 @@ Next I will add variables to simplify my model for later learning purposes:
 
 | **Variable**                    | **Calculation**                                                     |
 |---------------------------------|---------------------------------------------------------------------|
-| blueTeamWardRetentionRatio      | (blueTeamWardsPlaced - redTeamWardsDestroyed) / blueTeanWardsPlaced |
+| blueTeamWardRetentionRatio      | (blueTeamWardsPlaced - redTeamWardsDestroyed) / blueTeamWardsPlaced |
 | blueTeamNetKills                | blueTeamKills - redTeamKills                                        |
 | blueTeamJungleMinionsKilledDiff | blueTeamTotalJungleMinionsKilled - redTeamTotalJungleMinionsKilled  |
 | blueTeamMinionsKilledDiff       | blueTeamTotalMinionsKilled - redTeamTotalMinionsKilled              |
@@ -1435,3 +1449,835 @@ Sorry for the long README. Here is a potato:
 
 ![potato](readme-files/potato.jpg)  
 (If you know, you know)
+
+## Re Re Disclaimer
+
+All information from this point on are up-to-date as of May 2024.
+
+Alright. It's now 2:39 a.m., the 14th of May 2024. Nearly 2 years after the first iteration of this project.
+Why is there just another disclaimer here? Aw, thank you for asking!
+So, when I shared this, I added my discord tag on top it, and I was happy to see people reaching out to me thanking me for sharing, asking for advice or (which is the reason I am writing this) hinting me to mistakes I made.
+
+YES! I never thought it would be possible as well, but I made a crucial mistake (just kidding, I am sure there are tons of it lol).
+
+Some of you internet goons pointed out that I was missing (or rather not using) a certain filter when acquiring the match history data of players (no for real, thank you for telling me!).
+Back then, I used the following string to get it:
+
+```python
+requests.get('https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/' + puuid + '/ids?type=ranked&start=0&count=100&api_key=' + apiKey)
+``` 
+
+Looking good? Sike Nibba you thought! If you take a look at the query parameters of that specific endpoint, you might notice something.
+
+![query-parameters](third-iteration/readme-files/riot-api.png)
+
+(Pause the video here if you want to figure it out yourself.
+Image taken from the [Riot Developer Portal](https://developer.riotgames.com/).)
+
+...
+
+Exactly! The `type=ranked` parameter I used includes ALL ranked games. That means SoloQ and FlexQ games.
+
+    Sidenote:
+    There are two different ranked queues in League Of Legends: SoloQ and FlexQ.
+    SoloQ is the queue where you can queue up alone or with one friend of yours while in FlexQ you can queue up with up to 4 friends.
+    The key difference is the elo requirement for your friends to join your ranked games.
+
+For SoloQ, you are allowed to join your friend's ranked games if the elo difference between you and your friend does not exceed one rank (it's slightly different for the iron, silver emerald and diamond rank, though).
+Apex tiers (masters, grandmaster and challenger) are SoloQ only.
+But for FlexQ, there are barely any restrictions with the only exception being to be at least emerald rank to join apex tier games ([Sauce](https://support-leagueoflegends.riotgames.com/hc/en-us/articles/4406004330643-Ranked-Tiers-Divisions-and-Queues)).
+
+That means, if a certain player has got a high SoloQ rank, they are still able to play with their friends in a bronze FlexQ game and smurf on them which results in wrong data as the average high elo player will have different stats than the average low elo player (and vice versa of course).
+
+    Sidenote:
+    'Smurfing' is the act of a high elo player playing on a low elo account to play against lower skilled players.
+    Or in this example, to play with their low elo friends.
+
+Okay, now, sadly, I can't tell how many of the *ranked* games I gathered are FlexQ games (wow, three single words followed by a comma).
+But yea, for the sake of science, I kinda have to redo the whole thing.
+
+One might say it would be a nice comparison to see how the data differs from back then to now, but I can't really compare them as the data will be acquired using different criteria.
+ 
+Instead, I- .. I don't know.. I will just do it.
+But don't worry, I won't cover everything again.
+
+## Project Object the Third
+
+*Sigh*
+
+I will try to create a model to predict the outcome of a match based on values gathered at the 15-minute mark.
+Again.
+This time with less mistakes (hopefully).
+
+## 3 Data Used
+
+Things have changed since I first started this project. That includes:
+
+- The emerald rank has been added to the ranked tiers which is inbetween platinum and diamond
+- API changes due to the implementation of `riotIdName` and `riotIdTagline` as new `summoner_name`
+- Smaller API access limits (Yay!)
+
+### Rank distribution
+As of May 2024, the rank distribution for SoloQ in EU West is as follows.
+
+![rank-distribution](third-iteration/readme-files/rank_distribution.png)
+
+([Soße](https://www.leagueofgraphs.com/rankings/rank-distribution/euw))
+
+Ok! Since the data is supposed to represent the average player, I could simply get X times the amount of games per rank per percentage based of the rank distribution
+(Does that sentence make sense?).
+What I mean is to get 13 iron games, 25 bronze games, etc. as 13 % of the player base is iron and 25 % is bronze.
+Now, since I cannot use 0.0017 challenger games (well, I could but rounding that down to 0 would mean to not use that rank at all), I could upscale the amount of games.
+
+Quick math intermission.
+
+`scale_factor = 1/(min(percentages)) = 1/0.0017 ≈ 588.24`
+
+That would bring me `1.000008` challenger games. Perfect. But what would that mean for the other ranks?
+
+| Rank                | Challenger | Grandmaster | Master | Diamond | Emerald | Platinum | Gold | Silver | Bronze | Iron | **Total**  |
+|---------------------|------------|-------------|--------|---------|---------|----------|------|--------|--------|------|------------|
+| Games incl. scaling | 1          | 18          | 159    | 2353    | 5588    | 9412     | 7647 | 10000  | 14706  | 7647 | **57.531** |
+
+(Don't get confused over the perfect 10 thousand silver games. `0.17 x 588.24 ≈ 100`.)
+
+Alright. By applying the scaling factor, I will end up with `57.531` games.
+
+Remember how I complained about the API limitations earlier? Well, I happened to get access to a better key and the limitations are not that bad anymore:
+
+- 500 requests every 10 seconds
+- 30.000 requests every 10 minutes
+
+Assuming I would upscale the total amounts of games queried by 10 again, I would roughly end at 600 thousand games.
+Knowing myself, I will probably drop a couple of games due to duplicates or falsy data, which is why I assume to end at about 550 thousand games.
+
+    30 thousand requests every 10 minutes = 3 thousand requests every minute
+    600 thousand games / 3 thousand requests = 200 minutes = 3 hours and 20 minutes
+     
+    2 + 2 = 4 - 1 = 3 quick mafs.
+
+`3 hours and 20 minutes` sound like a fairly short amount of time. I might even get more games.
+
+For now, this is the overview of games to gather per rank.
+
+| Rank                | Challenger | Grandmaster | Master | Diamond | Emerald | Platinum | Gold   | Silver  | Bronze  | Iron   | **Total**   |
+|---------------------|------------|-------------|--------|---------|---------|----------|--------|---------|---------|--------|-------------|
+| Games incl. scaling | 10         | 180         | 1.590  | 23.530  | 55.880  | 94.120   | 76.470 | 100.000 | 147.060 | 76.470 | **575.310** |
+
+
+### API Access
+
+Alright. Here is the rundown.
+
+1. Get loads of `summonerIds` using `/lol/league/v4/entries/{queue}/{tier}/{division}`.
+2. Pass the `summonerIds` to `/lol/summoner/v4/summoners/{encryptedSummonerId}` to get the `puuids`.
+3. Use the `puuids` to get the `matchIds` using `/lol/match/v5/matches/by-puuid/{puuid}/ids`.
+4. Verify to only use SoloQ games (otherwise this iteration would be redundant)!
+5. Get the match data using `/lol/match/v5/matches/{matchId}`.
+
+Each set of data will be saved separately which makes it easier for me to filter out duplicates and falsy data.
+
+The first endpoint requires the `tier` parameter to be passed (next to others of course).
+The `tier` parameter represents the division of the rank (4 = lowest, 1 = highest).
+The issue with this one is that within these tiers, there skill difference between player may be significant, especially for the well known border of diamond 1.
+
+Alright. Here is another table. I decided to take the average of the tiers to determine the nearest tier to the rank.
+
+| Rank     | Tier 1 | Tier 2 | Tier 3 | Tier 4 | Result | Nearest Tier |
+|----------|--------|--------|--------|--------|--------|--------------|
+| Diamond  | 0.3    | 0.73   | 1.1    | 1.8    | 0.98   | 3            |
+| Emerald  | 1.1    | 1.7    | 2.4    | 4.1    | 2.3    | 3            |
+| Platinum | 2.9    | 4.5    | 4.1    | 4.9    | 4.1    | 3            |
+| Gold     | 2.1    | 2.7    | 3.6    | 5.2    | 3.4    | 3            |
+| Silver   | 2.9    | 4.0    | 4.4    | 6.1    | 4.35   | 3            |
+| Bronze   | 4.2    | 6.4    | 6.2    | 8.0    | 6.2    | 3            |
+| Iron     | 5.5    | 5.3    | 1.6    | 0.51   | 3.22   | 3            |
+
+They all average in tier 3. Wow. Especially wow, since I had to do this table twice as I used values for all regions the first time.
+Anyhow, once again, here is the [salsa](https://www.leagueofgraphs.com/rankings/rank-distribution/euw).
+
+Apex tiers are not included in this table as they haven't got tiers.
+To get these, I will query the following:
+- `/lol/league/v4/masterleagues/by-queue/{queue}`
+- `/lol/league/v4/grandmasterleagues/by-queue/{queue}`
+- `/lol/league/v4/challengerleagues/by-queue/{queue}`
+
+(Of course they had to put an endpoint for each apex tier..)
+
+Taking a look at the endpoint used in the third step reveals another issue. The amount of games I can get per player is limited to 100 games.
+Passing a larger number to the `count` parameter will result in an error.
+```json
+{
+    "status": {
+        "message": "Bad request - Query parameter 'count' must have a maximum value of 100. Invalid value '42069' given.",
+        "status_code": 400
+    }
+}
+```
+
+I decided to aim for `100` games per player. To get the amounts of player required, I can simply divide the amount of games by `100`.
+By rounding that value up, I also ensure a larger threshold of possible falsy data to sort out after.
+
+    ∀ x ∈ A: player_to_gather = ceil(x)
+    where x = games_to_gather and A = {Challenger, Grandmaster, ..., Iron}
+
+(Did I use these fancy symbols correctly?)
+
+Yielding the following result.
+
+| Rank   | Challenger | Grandmaster | Master | Diamond | Emerald | Platinum | Gold   | Silver  | Bronze  | Iron   | **Total**   |
+|--------|------------|-------------|--------|---------|---------|----------|--------|---------|---------|--------|-------------|
+| Games  | 10         | 180         | 1.590  | 23.530  | 55.880  | 94.120   | 76.470 | 100.000 | 147.060 | 76.470 | **575.310** |
+| Player | 1          | 2           | 16     | 236     | 559     | 942      | 765    | 1.000   | 1.471   | 765    | **5.757**   |
+
+This way, I get `(5.757 x 100) - 575.310 = 390` games more than intended which will be used as buffer. I hope that will be enough.
+
+Keep in mind that this ain't the perfect solution as getting so many games from a single player or small group of players may result in biased data.
+
+For step 4, I simply need to pass the `queue` parameter to the endpoint.
+Interestingly, the integer value for SoloQ is `69`. Just kidding, it's `420` (for real, though).
+
+Step 5 is the crucial one. Please scroll up like two kilometers to see the layout of such a JSON-dictionary returned (I am too lazy to link it here, but it's there.. somewhere).
+Basically, I will read out the values I need at the timestamp closest to 15 minutes for each player for each game.
+Again, please check the first iteration on more details on this. The script I will use this time will be slightly different, though.
+
+These are the values I will gather:
+
+- winningTeam
+- blueTeamWardsPlaced
+- blueTeamKills
+- blueTeamTotalJungleMinionsKilled
+- blueTeamTotalMinionsKilled
+- blueTeamAvgLevel
+- blueTeamCsPerMinute
+- blueTeamGoldPerMinute
+- redTeamWardsDestroyed
+- redTeamKills
+- redTeamTotalJungleMinionsKilled
+- redTeamTotalMinionsKilled
+- redTeamAvgLevel
+- redTeamCsPerMinute
+- redTeamGoldPerMinute
+
+Of course there is more to read out, especially if you want a more fancy exploratory data analysis, but I will stick to these values as these are the only ones I will need.
+
+Okay. All code will be available in the `third-iteration` folder.
+I will provide some snippets here and there.
+
+To get the `summonerIds`, I use the following method:
+
+```python
+def casuals(elo, amount, page=1):
+    gathered = 0
+    summoner_ids = []
+
+    while gathered < amount:
+        response = requests.get(
+            f'https://euw1.api.riotgames.com/lol/league/v4/entries/RANKED_SOLO_5x5/{elo}/III?page={page}&api_key={api_key}')
+
+        for summoner in response.json():
+            try:
+                summoner_ids.append(summoner['summonerId'])
+                gathered += 1
+                print(f'summoner id: {summoner["summonerId"]}')
+                if gathered >= amount:
+                    break
+            except UnicodeEncodeError:
+                pass
+        page += 1
+
+    print(f'gathered {gathered} {elo} players')
+
+    with open('summonerIds.txt', 'a') as f:
+        for summoner_id in summoner_ids:
+            f.write(summoner_id + '\n')
+```
+
+Basically, I pass the elo and the amount of players I want to gather to the method.
+I then iterate over the pages of the response and append the `summonerId` to a list which is then written to a file.
+
+Getting all 5.757 players took `5.49 seconds` as you can measure using the `time` module.
+
+Converting the `summonerIds` to `puuids` is done using the following method.
+
+```python
+def main():
+    with open('summonerIds.txt', 'r') as f:
+        summoner_ids = f.read().splitlines()
+
+    puuids = []
+    batch_size = 50
+    delay = 1
+
+    for i in range(0, len(summoner_ids), batch_size):
+        batch = summoner_ids[i:i + batch_size]
+
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [executor.submit(fetch_puuid, summoner_id) for summoner_id in batch]
+            for future in futures:
+                puuid = future.result()
+                if puuid:
+                    puuids.append(puuid)
+        print(f'processed {len(puuids)} summoner ids')
+        time.sleep(delay)
+
+    with open('puuids.txt', 'a') as f:
+        for puuid in puuids:
+            f.write(puuid + '\n')
+```
+
+`fetch_puuid` is the method to do the api calls.
+I am using a `ThreadPoolExecutor` to speed up the process as I can make multiple requests at once.
+Basically, I hired 10 gremlins and gave them a list of 50 summonerIds to play with every second.
+`50` requests every one `second` is the maximum I can do with the given API limitations.
+I could potentially decrease the delay even more considering the latency of the requests.
+
+Anyhow, the script took `197.27 seconds` or roughly `3.5` minutes.
+
+Alright. The next step is to get the `matchIds` using the `puuids`.
+I use the same script as before except the endpoint.
+Also, that very endpoint returns a list of `matchIds` which is why a nested loop is required to save them.
+
+```python
+with open('matchIds.txt', 'a') as f:
+    for games in game_list:
+        for game in games:
+            f.write(game + '\n')
+```
+
+The script finishes with `exit code 0` and `took 211.44 seconds` or roughly `3.5` minutes.
+
+I ended up on `530.015` matches.
+That is `45.295` matches less than intended.
+I also happened to find `19.123` duplicates, `61` EUNE games and `6` TR games which I will remove.
+
+`510.825` games remaining.
+
+Last thing to do is to get the actual match data. I won't go into detail here.
+Please take a look at the script in the `third-iteration` folder or scroll up and read the readme again.
+
+Executing the script took `493.78` minutes or a bit more than `8` hours 💀 and I ended up on `498.802` games.
+The `12.023` missing games may be due fact that some games are just not available anymore.
+
+## Data Cleaning 3
+
+Okay, to clea- .. Hold on. The data looks pretty good already. At least after skimming through it. Neat.
+The only real check implemented to verify a game has been queried successfully is by setting `winningTeam` initially to `2` and changing it depending on the game's outcome.
+
+Apart from that, I can print some details using [pandas](https://pandas.pydata.org/docs/).
+
+Here is an overview of each value's mininmum, maximum and mean value.
+
+| Column                           | Min    | Max     | Mean    |
+|----------------------------------|--------|---------|---------|
+| winningTeam                      | 0.0    | 1.0     | 0.5     |
+| blueTeamWardsPlaced              | 2.0    | 832.0   | 49.97   |
+| blueTeamKills                    | 0.0    | 46.0    | 11.79   |
+| blueTeamTotalJungleMinionsKilled | 0.0    | 126.7   | 64.27   |
+| blueTeamTotalMinionsKilled       | 65.9   | 339.6   | 235.28  |
+| blueTeamAvgLevel                 | 5.44   | 9.48    | 8.4     |
+| blueTeamCsPerMinute              | 7.95   | 27.84   | 19.97   |
+| blueTeamGoldPerMinute            | 836.07 | 2139.52 | 1351.88 |
+| redTeamWardsDestroyed            | 0.0    | 55.0    | 5.36    |
+| redTeamKills                     | 0.0    | 66.0    | 11.65   |
+| redTeamTotalJungleMinionsKilled  | 0.0    | 131.5   | 64.78   |
+| redTeamTotalMinionsKilled        | 57.2   | 345.7   | 236.35  |
+| redTeamAvgLevel                  | 5.56   | 9.48    | 8.4     |
+| redTeamCsPerMinute               | 7.58   | 28.59   | 20.08   |
+| redTeamGoldPerMinute             | 867.68 | 2107.36 | 1349.93 |
+
+Looks good, I guess. Apart from the maximum of `blueTeamWardsPlaced`.
+You are telling me, they placed over `800` wards after `15` minutes?
+*Sigh*
+Time to investigate.
+
+First. Let's see how often such values occur.
+```python
+print('800', df[df['blueTeamWardsPlaced'] > 800].shape[0])
+...
+```
+
+Yielding:
+
+| Amount wards placed | Matches |
+|---------------------|---------|
+| 800 - 900           | 3       |
+| 700 - 800           | 9       |
+| 600 - 700           | 70      |
+| 500 - 600           | 393     |
+| 400 - 500           | 2.105   |
+| 300 - 400           | 8.665   |
+| 200 - 300           | 23.761  |
+| 100 - 200           | 52.564  |
+
+It looks rather legit to me. We gotta dig deeper.
+
+Assuming every player on a team aims for maximum wards placed, they would probably
+- buy the [normal ward](https://leagueoflegends.fandom.com/wiki/Stealth_Ward) at the beginning of the game,
+- spend the rest and all incoming gold on [pink wards](https://leagueoflegends.fandom.com/wiki/Control_Ward), and
+- place all wards on cooldown
+
+Normal wards have a cooldown of 210−120 seconds based on their level.
+In the first table of this chapter we figured the average level of a player is `8.4` for both teams at the 15-minute mark.
+Since the level starts at `1`, the average level from beginning to the 15-minute mark is `(8.4 + 1) / 2 = 4.7`.
+Based on the formular given from the [league wiki](https://leagueoflegends.fandom.com/wiki/Stealth_Ward), the average cooldown is `210 - 90 / 17 x (average_level - 1)`.
+Running the numbers, you would end on `210 - 90 / 17 x (4.7 - 1) = 190.41` seconds.
+
+Alright. To get the total available normal wards up to the 15-minute mark, we divide the time by the cooldown.
+`15 times x 60 seconds / 190.41 average_cooldown = 4.72` wards. Since you cannot place `.72` wards, we round it down to `4`.
+
+Next up are the pink wards. Since we assume the player use wards on cooldown and spend their entire gold on them, we just need to calculate the amount of gold a player has after 15 minutes.
+A player starts with `500` gold and gets `20.4` gold every `10` seconds starting at `1:50` ([saus](https://leagueoflegends.fandom.com/wiki/Gold_(League_of_Legends)#Base_gold_generation)).
+That is `500 + 20.4 x (1 + 6 times x 13 minutes) = 2111.6` available gold.
+
+A pink ward costs `75` gold. `2111.6 / 75 + 4 (normal wards) = 32.15` pink wards. Rounding down, we get `32`.
+If you would then have all 5 player doing that, you would end up on `160` wards placed. That is nowhere near `800`.
+
+Let's take this a bit further. In order to maximise wards placed, a player wouldn't just have to sit in the base and wait for their passive income.
+Instead, they could opt into a more efficient strategy by placing normal wards on cooldown, spending `14.9` minutes acquiring gold and shortly before the 15-minute mark, recalling to spend their gold and place the wards.
+
+Thank god, we got the `goldPerMinute` value for each team. `(1351.88 blue_team + 1349.93 red_team) / 2 = 1350.91` average gold per minute.
+`1350.91 * 15 minutes = 20263.65` total gold available. That results in `20263.65 / 75 + 4 = 274.18` pink wards.
+
+If all 5 players do that, they would end up on `274.18 * 5 = 1370.9` wards placed. Alright, we finally got it above `800`, though.
+
+At this point, I would usually dive into the likeliness of such a scenario happening, but.. well, I am too lazy to do that.
+ 
+Since such high amounts of wards placed are possible and the rest of the data looks fine, I won't drop any games.
+
+## Exploratory Data Analysis 3
+
+As per usual, let's take a look at the winrate.
+
+![winrate](third-iteration/readme-files/winrate.png)
+
+As of today, the current winrate for the blue team on EUW is `50.4 %` (as of [League of Graphs](https://www.leagueofgraphs.com/de/rankings/blue-vs-red/euw)).
+My data is only slightly off. That is totally fine.
+
+And the beloved heatmap.
+
+![heatmap](third-iteration/readme-files/heatmap.png)
+
+For this heatmap, though, I decided to use the features that will be created in the next chapter.
+That still shows correlations between different factors of the game while reducing the amount of variables to show.
+ 
+Keep in mind, that the values are normalised using:
+
+```python
+df = (df - df.mean()) / df.std()
+``` 
+
+Some things are rather obvious.
+Such as the very high positive correlation between `csPerMinute` and `totalMinionsKilled`.
+That is because both values imply each other.
+The more minions you kill, the higher your `csPerMinute` will be.
+The higher your `csPerMinute` is, the more minions you have killed hence the higher your `totalMinionsKilled` will be.
+
+We are rather interested in the very first row. What does the `winningTeam` correlate with?
+The top three factors seem to be `Kills`, `AvgLevel` and `GoldPerMinute`.
+Hmm.. All three of them kind of imply each other as well since if one team is ahead, they have easier access to all three of them.
+
+    Sidenote:
+    Being 'ahead' means to have a higher amount of.. well.. anything.
+    Mostly this is reduced to the amount of gold since everything one does yields gold.
+    Still, one can be ahead in kills, minions killed, objectives taken, etc.
+    Also, one can be ahead of their lane opponent, their team, the enemy team, etc.
+
+I can smell it.. Another table is about to show.. and here.. it.. comes!
+
+| Feature            | Highest correlation      | Lowest correlation |
+|--------------------|--------------------------|--------------------|
+| winningTeam        | NetKills & GoldPerMinute | wardRetentionRatio |
+| wardRetentionRatio | NetKills                 | JungleCampsKilled  |
+| NetKills           | GoldPerMinute            | wardRetentionRatio |
+| JungleCampsKilled  | CsPerMinute              | wardRetentionRatio |
+| MinionsKilled      | CsPerMinute              | wardRetentionRatio |
+| AvgLevel           | GoldPerMinute            | wardRetentionRatio |
+| CsPerMinute        | MinionsKilled            | wardRetentionRatio |
+| GoldPerMinute      | NetKills                 | wardRetentionRatio |
+
+Alright. Comparing each of the features' highest and lowest correlation, we can see that the issues with `wardRetentionRatio` I've shown earlier might have a greater impact than anticipated.
+Thankfully, we don't really care about that!
+
+Instead, let's take a look at order of the features based on their correlation with the `winningTeam`.
+So `winningTeam` correlates with `NetKills` and `GoldPerMinute`.
+`NetKills` correlates with `GoldPerMinute`. `GoldPerMinute` on the other hand returns back to `NetKills`.
+
+Okay. Yes. That doesn't really help us except that we now only have to deal with two features instead of three as we removed `AvgLevel` from the equation.
+
+Anyhow. I will leave it to you to identify which of the features is the root cause for the win (my bet is on `GoldPerMinute`).
+
+
+## Feature Engineering THREE
+
+Just like before, this chapter covers the introduction of new variables which are then used for the model.
+Reducing the amount of variables should be beneficial for the model's learning process.
+
+First, splitting the data.
+
+```python
+df_train = df.sample(frac=0.85, random_state=0)
+df_test = df.drop(df_train.index)
+```
+
+Now my training data consist of 85 % of the whole data set while the testing data takes the left over 15 %.
+
+Next I will add variables to simplify my model for later learning purposes:
+
+| **Variable**                    | **Calculation**                                                     |
+|---------------------------------|---------------------------------------------------------------------|
+| blueTeamWardRetentionRatio      | (blueTeamWardsPlaced - redTeamWardsDestroyed) / blueTeamWardsPlaced |
+| blueTeamNetKills                | blueTeamKills - redTeamKills                                        |
+| blueTeamJungleMinionsKilledDiff | blueTeamTotalJungleMinionsKilled - redTeamTotalJungleMinionsKilled  |
+| blueTeamMinionsKilledDiff       | blueTeamTotalMinionsKilled - redTeamTotalMinionsKilled              |
+| blueTeamAvgLevelDiff            | blueTeamAvgLevel - redTeamAvgLevel                                  |
+| blueTeamCsPerMinuteDiff         | blueTeamCsPerMinute - redTeamCsPerMinute                            |
+| blueTeamGoldPerMinuteDiff       | blueTeamGoldPerMinute - redTeamGoldPerMinute                        |
+
+I can add these variables simply by doing:
+
+```python
+df['blueTeamWardRetentionRatio'] = (df.blueTeamWardsPlaced - df.redTeamWardsDestroyed)/df.blueTeamWardsPlaced
+df['blueTeamNetKills'] = (df.blueTeamKills - df.redTeamKills)
+df['blueTeamJungleMinionsKilledDiff'] = (df.blueTeamTotalJungleMonsterKilled - df.redTeamTotalJungleMonsterKilled)
+df['blueTeamMinionsKilledDiff'] = (df.blueTeamTotalMinionsKilled - df.redTeamTotalMinionsKilled)
+df['blueTeamAvgLevelDiff'] = (df.blueTeamAvgLevel - df.redTeamAvgLevel)
+df['blueTeamCsPerMinuteDiff'] = (df.blueTeamCsPerMinute - df.redTeamCsPerMinute)
+df['blueTeamGoldPerMinuteDiff'] = (df.blueTeamGoldPerMinute - df.redTeamGoldPerMinute)
+```
+
+Don't forget to remove all the columns that are not needed.
+
+```python
+df = df[['winningTeam', 'blueTeamWardRetentionRatio', ..., 'blueTeamGoldPerMinuteDiff']]
+```
+
+Dropping empty values (even though it wouldn't be necessary as there are no fields where this applies).
+
+```python
+df = df.dropna()
+```
+
+Lastly, normalising the data.
+
+```python
+df.iloc[:, 1:] = (df.iloc[:, 1:] - df.iloc[:, 1:].mean()) / df.iloc[:, 1:].std()
+```
+
+I know, this looks rather messy, but here is what happens.
+`df.iloc[:, 1:]` selects all rows and all columns starting from the second column since the first column is the `winningTeam` which is our target and can either have the state `0` or `1`.
+`(df.iloc[:, 1:] - df.iloc[:, 1:].mean())` subtracts the mean of each column from the column itself.
+`/ df.iloc[:, 1:].std()` then divides the result by the standard deviation of each column.
+
+Assume the following example.
+
+| Index  | winningTeam | Feature B | Feature C |
+|--------|-------------|-----------|-----------|
+| 0      | 1           | 5         | 4         |
+| 1      | 0           | 5         | 2         |
+| 2      | 1           | 7         | 4         |
+
+The mean of `Feature B` is `(5 + 5 + 7) / 3 = 5.67` and the standard deviation is `1.15`.
+The normalised `Feature B` would then be:
+
+    [(5 - 5.67) / 1.15, (5 - 5.67) / 1.15, (7 - 5.67) / 1.15] = [-0.58, -0.58, 1.26]
+
+The whole normalised table looks like this:
+
+| Index | winningTeam | Feature B | Feature C |
+|-------|-------------|-----------|-----------|
+| 0     | 1           | -0.577350 | 0.577350  |
+| 1     | 0           | -0.577350 | -1.154701 |
+| 2     | 1           | 1.154701  | 0.577350  |
+
+(I can't be bothered to show the calculations in detail lol. Google it!)
+
+Alright, that's it for this chapter.
+
+## Building The Model III
+
+So, we've got the data.
+We've got it prepared.
+We know how we created the model last time.
+We could potentially jump straight into training the model.
+But.. that would be boring.
+Instead, let me quickly dive into the meaning of the prefix `hyper` (no, not Hypa Hypa) when it comes to parameters.
+
+The crux of training a model is by updating the parameters of it.
+These include things like the weights and biases of the neurons in a neural network.
+To update these parameters, techniques like gradient descent or its variations are used.
+But this all happens *inside* the model.
+
+The `hyper` prefix refers to parameters that are used *outside* the model.
+A hyperparameter could be the learning rate of the model, the number of layers in a neural network, the number of trees in a random forest, etc.
+Basically everything that is not updated during the training process and has to be specified beforehand.
+
+Now, we could simply use the same model as before, using the same hyperparameters, eventually get a result and either be happy about it or not.
+If we are not happy about it, well then use different data, different architecture, or different hyperparameters.
+Since I don't want to run X amount of models just to see which parametrisation works best on the given set of data, I will use a technique called `GridSearch`.
+
+### GridSearching our way through the hyperparameters
+
+`GridSearch` is a technique commonly used to find the *best* hyperparameters for a model.
+`Best` in this context means the hyperparameters that yield the best result based on the target metric.
+Below you will see a table of hyperparameters I will use for `GridSearch`.
+
+| Optimiser | Activation | Neurons | Batch Size | Epochs |
+|-----------|------------|---------|------------|--------|
+| adam      | relu       | 16      | 10         | 50     |
+| rmsprop   | tanh       | 32      | 20         | 100    |
+|           | sigmoid    | 64      | 50         | 150    |
+|           |            | 128     |            |        |
+
+(There are even more hyperparameters to consider, such as the learning rate, but I will stick to these for now.)
+
+In total, these are `216` different combinations, or a shit ton of models to train.
+Also, since training `216` full models is rather dumb considering I also need to do other stuff on my PC, I will use another cool thing, called `EarlyStopping`.
+
+Think of it like this. The `GridSearch` trains a model for each of the combinations and the `EarlyStopping` prevents spending resources on combinations that converge within the training process, resulting in a much less time needed to train all these variations.
+
+The implementation is fairly easy.
+First, we need a method to build models.
+
+```python
+def create_model(optimizer='adam', activation='relu', neurons=32):
+    logging.info(f'creating model with optimizer={optimizer}, activation={activation}, neurons={neurons}')
+    model = Sequential()
+    model.add(Input(shape=(X_train.shape[1],)))
+    model.add(Dense(neurons, activation=activation))
+    model.add(Dense(1, activation='sigmoid'))
+    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
+    return model
+```
+
+Then, the `EarlyStopping` callback.
+
+```python
+early_stopping = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=10, restore_best_weights=True)
+model = KerasClassifier(model=create_model, optimizer='adam', activation='relu', neurons=32, callbacks=[early_stopping], verbose=0)
+```
+
+The `EarlyStopping` callback is passed to the `KerasClassifier` which is then used in the `GridSearch`.
+
+```python
+grid_search = GridSearchCV(estimator=model, param_grid=param_grid, n_jobs=4, cv=3, verbose=3)
+search_result = grid_search.fit(X_train, y_train)
+```
+
+If you run this yourself, make sure to set `n_jobs` correctly. This is the amount of parallel jobs to run.
+Setting it to `-1` will use all available cores and hence all available resources. Eventually your CPU usage looks like this:
+
+![cpu-usage](third-iteration/readme-files/cpu-usage.png)
+
+I got 12 logical cores. Each is used to `100 %` indicated by the blue color.
+
+Other solutions for this are to use a cloud service or to use a GPU (which only works on UNIX as of [recent updates](https://www.tensorflow.org/install/pip)).
+
+Alright, next is the `param_grid`. It's a dictionary containing the hyperparameters to search for.
+
+```python
+param_grid = {
+    'optimizer': ['adam', 'rmsprop'],
+    'activation': ['relu', 'tanh', 'sigmoid'],
+    'neurons': [16, 32, 64, 128],
+    'batch_size': [10, 20, 50],
+    'epochs': [50, 100, 150]
+}
+```
+
+Add some logging and you are good to go.
+Eventually, you will get a result like this.
+
+```
+best: 0.735317703523247 using {'activation': 'sigmoid', 'batch_size': 20, 'epochs': 150, 'neurons': 32, 'optimizer': 'adam'}
+mean: 0.7346903141148986, std: 0.0005151145137547101, params: {'activation': 'relu', 'batch_size': 20, 'epochs': 50, 'neurons': 32, 'optimizer': 'adam'}
+mean: 0.7348837207937705, std: 4.443115800214344e-05, params: {'activation': 'relu', 'batch_size': 20, 'epochs': 50, 'neurons': 64, 'optimizer': 'adam'}
+mean: 0.7349167400732814, std: 0.00039983827517958205, params: {'activation': 'relu', 'batch_size': 20, 'epochs': 50, 'neurons': 16, 'optimizer': 'adam'}
+mean: 0.7347422045343172, std: 0.00039368927925007377, params: {'activation': 'relu', 'batch_size': 20, 'epochs': 100, 'neurons': 32, 'optimizer': 'adam'}
+...
+```
+
+Running this entire thing took about `83.084` seconds or roughly `23` hours.
+(God, why am I doing this..)
+
+Anyhow, using `GridSearch` and `EarlyStopping` the *best* hyperparameters for the set of data I got are:
+
+- activation: sigmoid
+- batch_size: 20
+- epochs: 150
+- neurons: 32
+- optimizer: adam
+
+Couple hyperparameters are missing from that list, such as the regularisation and the number of layers.
+As for the amount of epochs, we've set the maximum to `150` in the `GridSearch` and `150` appeares to be the *best* but we don't know if a higher value would yield a better result.
+
+Now, to deal with the missing hyperparameters, I decided not to run the entire `GridSearch` again as adding more hyperparameters would increase the amount of models to train nearly exponentially.
+Instead, I will run a couple of models with different configurations of the missing hyperparameters and see which one yields the best result.
+
+These are:
+
+| Regularisation | Layers |
+|----------------|--------|
+| L1(0.001)      | 1      |
+| L1(0.01)       | 2      |
+| L1(0.1)        | 3      |
+| L2(0.001)      |        |
+| L2(0.01)       |        |
+| L2(0.1)        |        |
+
+The implementation is fairly easy as we can use a simple nested `for-loop` to iterate over the configurations.
+
+```python
+even_more_hypers = {
+    'layers': [1, 2, 3],
+    'regulariser': [L1(0.001), L1(0.01), L1(0.1), L2(0.001), L2(0.01), L2(0.1)]
+}
+
+t_start = time.time()  # logging
+for layers in even_more_hypers['layers']:
+    for reg in even_more_hypers['regulariser']:
+        if layers is 1:  # LANGUAGE !
+            print(f'running model with {layers} layer and {get_regulariser_str(reg)} regulariser')
+        else:  # get_regulariser_str is a method to convert the regulariser to a string
+            print(f'running model with {layers} layers and {get_regulariser_str(reg)} regulariser')
+        run_model(reg, layers)  # method to create, compile and fit the model
+with open('model-results.txt', 'a') as f:  # save stuff to file
+    f.write(f'total time: {time.time() - t_start}\n')
+```
+
+Now, one might argue that the hyperparameters compared using the `GridSearch` may change when considering the regularisation and the number of layers.
+Well, that is true. But considering every single hyperparameter and their possible would result in `216 x 6 x 3 = 3888` models to train.
+Now, since I already needed `23` hours for `216` models, I would need approx. `23 x 18 = 414` hours for `3888` models.
+That's about `17` days. No, thank you.
+
+Here are the results after another `31716.28` seconds or roughly `9` hours.
+
+| Layers | Regulariser | Duration | Accuracy |
+|--------|-------------|----------|----------|
+| 1      | L1(0.001)   | 1717.41s | 0.7355   |
+| 1      | L1(0.010)   | 1743.46s | 0.735    |
+| 1      | L1(0.100)   | 1691.97s | 0.7353   |
+| 1      | L2(0.001)   | 1651.81s | 0.7352   |
+| 1      | L2(0.010)   | 1614.85s | 0.7354   |
+| 1      | L2(0.100)   | 1612.95s | 0.7356   |
+| 2      | L1(0.001)   | 1767.34s | 0.7355   |
+| 2      | L1(0.010)   | 1774.88s | 0.5057   |
+| 2      | L1(0.100)   | 1803.4s  | 0.4943   |
+| 2      | L2(0.001)   | 1753.43s | 0.7354   |
+| 2      | L2(0.010)   | 1701.47s | 0.7353   |
+| 2      | L2(0.100)   | 1702.68s | 0.7348   |
+| 3      | L1(0.001)   | 1910.78s | 0.7356   |
+| 3      | L1(0.010)   | 1858.15s | 0.4943   |
+| 3      | L1(0.100)   | 1887.93s | 0.4943   |
+| 3      | L2(0.001)   | 1858.11s | 0.735    |
+| 3      | L2(0.010)   | 1829.26s | 0.7354   |
+| 3      | L2(0.100)   | 1836.38s | 0.5057   |
+
+Yea, noone likes to read tables. I get it. Here is a plot of the results (excluding very bad ones).
+
+![model-results](third-iteration/readme-files/model-results.png)
+
+(The y-axis represents the accuracy.)
+
+The bars are sorted by the duration it took to train the model.
+Now, one would assume this would sort of auto-sort by layers which is the case for the 3-layer models, but not for the rest.
+It appears that the regularisation does impact the accuracy rather than the number of layers (well, at least for 1 and 2 layers).
+Keep in mind, that the initial weights are randomised and hence not serialised.
+ 
+Lastly, the very first bar (1 layer, L2(0.1)) and the very last bar (3 layers, L1(0.001)) achieved the best accuracy.
+Now, why is that? (Skip ahead if you don't care about mathematical blah blah.)
+
+The general idea of regularisation is to prevent overfitting by adding a penalty to the loss function.
+`L1 ("Lasso")` and `L2 ("Ridge")` behave quite different (there is "dropout" as well, but not covered here).
+
+L1 adds the absolute value of the magnitude of coefficients as a penalty term to the loss function.
+
+$$Loss_{L1}=Loss+\lambda\sum_{i}|w_i|$$
+
+L2 adds the squared magnitude of coefficients as a penalty term to the loss function.
+
+$$Loss_{L2}=Loss+\lambda\sum_{i}{w_i}^2$$
+
+(Where $\lambda$ is the penalty coefficient and $w_i$ are the weights.)
+
+That results in different impacts. `L2(0.1)` with `1 layer` encourages smaller weights, thus reducing the model complexity and helps with generalisation.
+With a single layer, the network is simpler, and the `L2` penalty of `0.1` is substantial enough to regularise effectively without underfitting.
+
+`L1(0.001)` with `3 layers` on the other hand, encourages sparsity, effectively setting some weights to zero.
+Even though the penalty coefficient (0.001) is smaller, the presence of 3 layers means the model has more parameters.
+The sparsity induced by `L1` regularisation can counteract the increased complexity of having more layers.
+
+Despite the apparent differences in structure (1 layer vs. 3 layers) and regularisation techniques (L2 vs. L1), the overall regularisation effect _could_ balance out, leading to similar performance.
+Even though the 3-layer model has a higher capacity, its complexity gets pruned by the L1 regularisation, reducing the effective number of parameters (as some weights may become zero).
+The single-layer model using L2 maintains its simpler structure, but ensures weights are kept small and controlled, achieving similar complexity control.
+
+Consider the following. The regularisation term in the loss function effectively controls the capacity of the model.
+Higher regularisation coefficients in L2 might shrink the weights more significantly, while a lower coefficient in L1 might lead to sparsity.
+When properly balanced, the effective capacity and their values may result in models that generalise similarly on the test set despite structural differences.
+
+To clarify even more, these are the overall loss functions for two fictive models $M_1$ (3 layers, L1) and $M_2$ (1 layer, L2) with the regularisation parameters shown above.
+
+$$Loss_{M1}=Loss_{data}+0.001\sum_{i}|w_i|$$
+
+$$Loss_{M2}=Loss_{data}+0.1\sum_{i}{w_i}^2$$
+
+Assume $Loss_{data}$ (e.g. binary crossentropy) is the same for both models and each regularisation term compensates for the model's complexity in such way that:
+
+$$\sum_{i}{w_i}^2≈\frac{1}{100}\sum_{i}|w_i|$$
+
+Then, the effective penalisation might lead to similar effective losses and thus similar performance metrics.
+
+Ok! Sorry for this, but I gave you the option to skip.
+
+(Also, here is the [kastike](https://builtin.com/data-science/l2-regularization) for the regularisation stuff and (worth mentioning) the [соус](https://www.upyesp.org/posts/makrdown-vscode-math-notation/) to write math in markdown.)
+
+### THE LAST AIRBEND-.. model I mean
+
+To summarise, here is what I will use for the model:
+
+- activation: sigmoid
+- batch size: 20
+- epochs: 150
+- neurons: 32
+- optimiser: adam
+- regularisation: L2(0.1)
+- layers: 1
+
+Please check out the scripts for a full implementation.
+
+That's already it.
+
+## Evaluation IV
+
+Running the models yielded an accuracy of `73.54 %` on the test set.
+Keep in mind, re-running the model might yield different results due to the random initialisation of the weights.
+
+I also decided to plot the loss during the training process.
+
+![loss](third-iteration/readme-files/model-loss.png)
+
+Neat "L" shape, isn't it? That's the loss function converging to a minimum.
+Considering the loss decreased only slightly after the very first epochs, running less epochs might be beneficial. At least time-wise.
+
+## Famous Last Words
+
+Now, I wasn't planning to touch this project again after the challenger thingy.
+As mentioned before, people contact me concerning this project sometimes what I am very grateful for.
+The reason for this re-run was a mistake pointed out to me - don't get me wrong, this whole thing is everything but perfect.
+I still thought I had to get that sorted out.
+
+If you remember (or scroll up again), we achieved a 68 % accuracy on the test set in the first iteration.
+This time on the other hand, we got a 73.54 %.
+That may not only be due to the filtering of the FlexQ games, even though it surely influenced the result.
+Instead, I think all that hyperparameter tuning covered impacted the results as well.
+
+After all, the idea to predict the outcome of a game based on the first 15 minutes should not be used to bet on games or anything (I mean, you could try lol, but I won't take any responsibility).
+Instead, I only had fun doing it, getting into the different techniques and learning a lot about machine learning and data science while doing so.
+
+I hope you enjoyed reading this as much as I enjoyed writing it and wether you are a beginner or an expert, I hope you could take something away from this.
+
+I am also always happy to see your results or hear about your projects, so feel free to reach out to me.
+
+Last but not least..
+
+![pot.jpg](third-iteration/readme-files/pot.jpg)
